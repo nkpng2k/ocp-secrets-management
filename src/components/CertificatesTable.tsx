@@ -1,8 +1,15 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Label } from '@patternfly/react-core';
-import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
+import { 
+  Label, 
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
+  MenuToggleElement,
+} from '@patternfly/react-core';
+import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
@@ -58,7 +65,20 @@ const getConditionStatus = (certificate: Certificate) => {
 
 export const CertificatesTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
+  const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   
+  const toggleDropdown = (certId: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [certId]: !prev[certId]
+    }));
+  };
+
+  const handleInspect = (cert: Certificate) => {
+    console.log('Inspecting certificate:', cert);
+    // TODO: Implement inspect functionality (could open a modal, navigate to details page, etc.)
+  };
+
   const [certificates, loaded, loadError] = useK8sWatchResource<Certificate[]>({
     groupVersionKind: CertificateModel,
     namespace: 'demo', // Focus on demo project as requested
@@ -66,12 +86,13 @@ export const CertificatesTable: React.FC = () => {
   });
 
   const columns = [
-    { title: t('Name'), width: 18 },
-    { title: t('Namespace'), width: 12 },
-    { title: t('Secret'), width: 18 },
-    { title: t('Issuer'), width: 18 },
-    { title: t('DNS Names'), width: 22 },
+    { title: t('Name'), width: 16 },
+    { title: t('Namespace'), width: 10 },
+    { title: t('Secret'), width: 16 },
+    { title: t('Issuer'), width: 16 },
+    { title: t('DNS Names'), width: 20 },
     { title: t('Status'), width: 12 },
+    { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -80,6 +101,7 @@ export const CertificatesTable: React.FC = () => {
     return certificates.map((cert) => {
       const conditionStatus = getConditionStatus(cert);
       const dnsNames = cert.spec.dnsNames?.join(', ') || cert.spec.commonName || '-';
+      const certId = `${cert.metadata.namespace}-${cert.metadata.name}`;
       
       return {
         cells: [
@@ -93,10 +115,37 @@ export const CertificatesTable: React.FC = () => {
               {conditionStatus.status}
             </Label>
           ),
+          (
+            <Dropdown
+              isOpen={openDropdowns[certId] || false}
+              onSelect={() => setOpenDropdowns(prev => ({ ...prev, [certId]: false }))}
+              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  aria-label="kebab dropdown toggle"
+                  variant="plain"
+                  onClick={() => toggleDropdown(certId)}
+                  isExpanded={openDropdowns[certId] || false}
+                >
+                  <EllipsisVIcon />
+                </MenuToggle>
+              )}
+              shouldFocusToggleOnSelect
+            >
+              <DropdownList>
+                <DropdownItem
+                  key="inspect"
+                  onClick={() => handleInspect(cert)}
+                >
+                  {t('Inspect')}
+                </DropdownItem>
+              </DropdownList>
+            </Dropdown>
+          ),
         ],
       };
     });
-  }, [certificates, loaded]);
+  }, [certificates, loaded, openDropdowns, t]);
 
   return (
     <ResourceTable
