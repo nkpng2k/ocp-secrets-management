@@ -75,7 +75,8 @@
     "description": "OpenShift Console plugin for managing secrets and sensitive data.",
     "exposedModules": {
       "ExamplePage": "./components/ExamplePage",
-      "SecretsManagement": "./components/SecretsManagement"
+      "SecretsManagement": "./components/SecretsManagement",
+      "ResourceInspect": "./components/ResourceInspect"
     },
     "dependencies": {
       "@console/pluginAPI": "*"

@@ -91,8 +91,13 @@ export const IssuersTable: React.FC = () => {
   };
 
   const handleInspect = (issuer: Issuer) => {
-    console.log('Inspecting issuer:', issuer);
-    // TODO: Implement inspect functionality
+    const resourceType = issuer.metadata.namespace ? 'issuers' : 'clusterissuers';
+    const name = issuer.metadata.name;
+    if (issuer.metadata.namespace) {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${issuer.metadata.namespace}/${name}`;
+    } else {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
+    }
   };
   
   // Watch both Issuers and ClusterIssuers

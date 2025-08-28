@@ -8,6 +8,22 @@
     }
   },
   {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/secrets-management/inspect/:resourceType/:namespace/:name",
+      "component": { "$codeRef": "ResourceInspect.ResourceInspect" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/secrets-management/inspect/:resourceType/:name",
+      "component": { "$codeRef": "ResourceInspect.ResourceInspect" }
+    }
+  },
+  {
     "type": "console.navigation/href",
     "properties": {
       "id": "secrets-management",

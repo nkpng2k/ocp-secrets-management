@@ -92,8 +92,9 @@ export const ExternalSecretsTable: React.FC = () => {
   };
 
   const handleInspect = (externalSecret: ExternalSecret) => {
-    console.log('Inspecting external secret:', externalSecret);
-    // TODO: Implement inspect functionality
+    const namespace = externalSecret.metadata.namespace || 'demo';
+    const name = externalSecret.metadata.name;
+    window.location.href = `/secrets-management/inspect/externalsecrets/${namespace}/${name}`;
   };
   
   const [externalSecrets, loaded, loadError] = useK8sWatchResource<ExternalSecret[]>({

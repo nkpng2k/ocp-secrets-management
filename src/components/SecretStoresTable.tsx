@@ -111,8 +111,13 @@ export const SecretStoresTable: React.FC = () => {
   };
 
   const handleInspect = (secretStore: SecretStore) => {
-    console.log('Inspecting secret store:', secretStore);
-    // TODO: Implement inspect functionality
+    const resourceType = secretStore.metadata.namespace ? 'secretstores' : 'clustersecretstores';
+    const name = secretStore.metadata.name;
+    if (secretStore.metadata.namespace) {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${secretStore.metadata.namespace}/${name}`;
+    } else {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
+    }
   };
   
   // Watch both SecretStores and ClusterSecretStores

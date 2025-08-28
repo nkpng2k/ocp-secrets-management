@@ -75,8 +75,9 @@ export const CertificatesTable: React.FC = () => {
   };
 
   const handleInspect = (cert: Certificate) => {
-    console.log('Inspecting certificate:', cert);
-    // TODO: Implement inspect functionality (could open a modal, navigate to details page, etc.)
+    const namespace = cert.metadata.namespace || 'demo';
+    const name = cert.metadata.name;
+    window.location.href = `/secrets-management/inspect/certificates/${namespace}/${name}`;
   };
 
   const [certificates, loaded, loadError] = useK8sWatchResource<Certificate[]>({
