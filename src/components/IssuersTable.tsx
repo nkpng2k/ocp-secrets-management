@@ -144,7 +144,6 @@ export const IssuersTable: React.FC = () => {
           label: resourceType,
           labelPlural: `${resourceType}s`,
           plural: isClusterScoped ? 'clusterissuers' : 'issuers',
-          apiVersion: `${model.group}/${model.version}`,
         },
         resource: deleteModal.issuer,
       });

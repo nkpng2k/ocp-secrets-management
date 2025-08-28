@@ -165,7 +165,6 @@ export const SecretStoresTable: React.FC = () => {
           label: resourceType,
           labelPlural: `${resourceType}s`,
           plural: isClusterScoped ? 'clustersecretstores' : 'secretstores',
-          apiVersion: `${model.group}/${model.version}`,
         },
         resource: deleteModal.secretStore,
       });

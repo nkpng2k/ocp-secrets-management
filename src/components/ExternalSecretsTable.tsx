@@ -137,7 +137,6 @@ export const ExternalSecretsTable: React.FC = () => {
           label: 'ExternalSecret',
           labelPlural: 'ExternalSecrets', 
           plural: 'externalsecrets',
-          apiVersion: `${ExternalSecretModel.group}/${ExternalSecretModel.version}`,
         },
         resource: deleteModal.externalSecret,
       });
