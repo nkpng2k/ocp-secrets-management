@@ -116,8 +116,8 @@ export const SecretStoresTable: React.FC = () => {
     { title: t('Type'), width: 15 },
     { title: t('Scope'), width: 10 },
     { title: t('Provider'), width: 17 },
-    { title: t('Status'), width: 12 },
     { title: t('Details'), width: 28 },
+    { title: t('Status'), width: 12 },
   ];
 
   const rows = React.useMemo(() => {
@@ -139,12 +139,12 @@ export const SecretStoresTable: React.FC = () => {
           secretStore.scope === 'Namespace' ? 'SecretStore' : 'ClusterSecretStore',
           secretStore.scope,
           providerType,
+          providerDetails,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
           ),
-          providerDetails,
         ],
       };
     });

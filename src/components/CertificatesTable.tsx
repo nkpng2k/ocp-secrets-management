@@ -70,8 +70,8 @@ export const CertificatesTable: React.FC = () => {
     { title: t('Namespace'), width: 12 },
     { title: t('Secret'), width: 18 },
     { title: t('Issuer'), width: 18 },
-    { title: t('Status'), width: 12 },
     { title: t('DNS Names'), width: 22 },
+    { title: t('Status'), width: 12 },
   ];
 
   const rows = React.useMemo(() => {
@@ -87,12 +87,12 @@ export const CertificatesTable: React.FC = () => {
           cert.metadata.namespace,
           cert.spec.secretName,
           `${cert.spec.issuerRef.name} (${cert.spec.issuerRef.kind})`,
+          dnsNames,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
           ),
-          dnsNames,
         ],
       };
     });

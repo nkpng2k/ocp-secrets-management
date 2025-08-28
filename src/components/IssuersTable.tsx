@@ -96,8 +96,8 @@ export const IssuersTable: React.FC = () => {
     { title: t('Type'), width: 12 },
     { title: t('Scope'), width: 12 },
     { title: t('Issuer Type'), width: 15 },
-    { title: t('Status'), width: 12 },
     { title: t('Details'), width: 29 },
+    { title: t('Status'), width: 12 },
   ];
 
   const rows = React.useMemo(() => {
@@ -127,12 +127,12 @@ export const IssuersTable: React.FC = () => {
           issuer.scope === 'Namespace' ? 'Issuer' : 'ClusterIssuer',
           issuer.scope,
           issuerType,
+          details,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
           ),
-          details,
         ],
       };
     });

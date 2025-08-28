@@ -88,8 +88,8 @@ export const ExternalSecretsTable: React.FC = () => {
     { title: t('Namespace'), width: 12 },
     { title: t('Target Secret'), width: 18 },
     { title: t('Secret Store'), width: 25 },
-    { title: t('Status'), width: 12 },
     { title: t('Refresh Interval'), width: 15 },
+    { title: t('Status'), width: 12 },
   ];
 
   const rows = React.useMemo(() => {
@@ -105,12 +105,12 @@ export const ExternalSecretsTable: React.FC = () => {
           externalSecret.metadata.namespace,
           externalSecret.spec.target.name,
           `${externalSecret.spec.secretStoreRef.name} (${externalSecret.spec.secretStoreRef.kind})`,
+          refreshInterval,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
           ),
-          refreshInterval,
         ],
       };
     });
