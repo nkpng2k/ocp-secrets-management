@@ -6,7 +6,7 @@ import { CheckCircleIcon } from '@patternfly/react-icons';
 import './example.css';
 
 export default function ExamplePage() {
-  const { t } = useTranslation('plugin__console-plugin-template');
+  const { t } = useTranslation('plugin__ocp-secrets-management');
 
   return (
     <>
