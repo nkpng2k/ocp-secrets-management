@@ -92,11 +92,11 @@ export const IssuersTable: React.FC = () => {
   const loadError = issuersError || clusterIssuersError;
 
   const columns = [
-    { title: t('Name'), width: 20 },
+    { title: t('Name'), width: 18 },
     { title: t('Type'), width: 12 },
     { title: t('Scope'), width: 12 },
     { title: t('Issuer Type'), width: 15 },
-    { title: t('Details'), width: 29 },
+    { title: t('Details'), width: 31 },
     { title: t('Status'), width: 12 },
   ];
 

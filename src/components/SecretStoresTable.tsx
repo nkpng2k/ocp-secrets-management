@@ -113,10 +113,10 @@ export const SecretStoresTable: React.FC = () => {
 
   const columns = [
     { title: t('Name'), width: 18 },
-    { title: t('Type'), width: 15 },
+    { title: t('Type'), width: 12 },
     { title: t('Scope'), width: 10 },
-    { title: t('Provider'), width: 17 },
-    { title: t('Details'), width: 28 },
+    { title: t('Provider'), width: 18 },
+    { title: t('Details'), width: 30 },
     { title: t('Status'), width: 12 },
   ];
 
