@@ -9,10 +9,9 @@ import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // ExternalSecret custom resource definition from external-secrets-operator
 const ExternalSecretModel = {
-  apiVersion: 'external-secrets.io/v1beta1',
-  kind: 'ExternalSecret',
-  plural: 'externalsecrets',
+  group: 'external-secrets.io',
   version: 'v1beta1',
+  kind: 'ExternalSecret',
 };
 
 interface ExternalSecret {

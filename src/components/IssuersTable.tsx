@@ -9,17 +9,15 @@ import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // Issuer and ClusterIssuer models from cert-manager
 const IssuerModel = {
-  apiVersion: 'cert-manager.io/v1',
-  kind: 'Issuer',
-  plural: 'issuers',
+  group: 'cert-manager.io',
   version: 'v1',
+  kind: 'Issuer',
 };
 
 const ClusterIssuerModel = {
-  apiVersion: 'cert-manager.io/v1',
-  kind: 'ClusterIssuer',
-  plural: 'clusterissuers',
+  group: 'cert-manager.io',
   version: 'v1',
+  kind: 'ClusterIssuer',
 };
 
 interface Issuer {

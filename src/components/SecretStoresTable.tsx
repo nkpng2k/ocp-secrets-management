@@ -9,17 +9,15 @@ import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // SecretStore and ClusterSecretStore models from external-secrets-operator
 const SecretStoreModel = {
-  apiVersion: 'external-secrets.io/v1beta1',
-  kind: 'SecretStore',
-  plural: 'secretstores',
+  group: 'external-secrets.io',
   version: 'v1beta1',
+  kind: 'SecretStore',
 };
 
 const ClusterSecretStoreModel = {
-  apiVersion: 'external-secrets.io/v1beta1',
-  kind: 'ClusterSecretStore',
-  plural: 'clustersecretstores',
+  group: 'external-secrets.io',
   version: 'v1beta1',
+  kind: 'ClusterSecretStore',
 };
 
 interface SecretStore {

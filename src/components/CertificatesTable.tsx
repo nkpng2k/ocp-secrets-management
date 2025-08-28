@@ -8,10 +8,9 @@ import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // Certificate custom resource definition from cert-manager
 const CertificateModel = {
-  apiVersion: 'cert-manager.io/v1',
-  kind: 'Certificate',
-  plural: 'certificates',
+  group: 'cert-manager.io',
   version: 'v1',
+  kind: 'Certificate',
 };
 
 interface Certificate {
