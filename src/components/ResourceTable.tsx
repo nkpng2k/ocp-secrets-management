@@ -4,7 +4,6 @@ import {
   EmptyState,
   EmptyStateBody,
   Title,
-  Spinner,
   Alert,
   AlertVariant,
 } from '@patternfly/react-core';
@@ -42,65 +41,70 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 
   if (loading) {
     return (
-      <EmptyState data-test={`${dataTest}-loading`}>
-        <Spinner />
-        <Title size="lg" headingLevel="h4">
-          {t('Loading resources...')}
-        </Title>
-      </EmptyState>
+      <div className="co-m-loader co-an-fade-in-out" data-test={`${dataTest}-loading`}>
+        <div className="co-m-loader-dot__one"></div>
+        <div className="co-m-loader-dot__two"></div>
+        <div className="co-m-loader-dot__three"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert
-        variant={AlertVariant.danger}
-        title={t('Error loading resources')}
-        data-test={`${dataTest}-error`}
-      >
-        {error}
-      </Alert>
+      <div className="co-m-pane__body" data-test={`${dataTest}-error`}>
+        <Alert
+          variant={AlertVariant.danger}
+          title={t('Error loading resources')}
+          isInline
+        >
+          {error}
+        </Alert>
+      </div>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <EmptyState data-test={`${dataTest}-empty`}>
-        <SearchIcon />
-        <Title size="lg" headingLevel="h4">
-          {emptyStateTitle || t('No resources found')}
-        </Title>
-        <EmptyStateBody>
-          {emptyStateBody || t('No resources of this type are currently available in the demo project.')}
-        </EmptyStateBody>
-      </EmptyState>
+      <div className="co-m-pane__body" data-test={`${dataTest}-empty`}>
+        <EmptyState>
+          <SearchIcon className="co-m-empty-state__icon" />
+          <Title size="lg" headingLevel="h4">
+            {emptyStateTitle || t('No resources found')}
+          </Title>
+          <EmptyStateBody>
+            {emptyStateBody || t('No resources of this type are currently available in the demo project.')}
+          </EmptyStateBody>
+        </EmptyState>
+      </div>
     );
   }
 
   return (
-    <div className="pf-c-table pf-m-compact" data-test={dataTest}>
-      <table className="pf-c-table__table" role="grid" aria-label="Resource table">
-        <thead className="pf-c-table__thead">
-          <tr className="pf-c-table__tr" role="row">
-            {columns.map((column, index) => (
-              <th key={index} className="pf-c-table__th" role="columnheader">
-                {column.title}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="pf-c-table__tbody">
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="pf-c-table__tr" role="row">
-              {row.cells.map((cell, cellIndex) => (
-                <td key={cellIndex} className="pf-c-table__td" role="gridcell">
-                  {cell}
-                </td>
+    <div className="co-m-table-grid co-m-table-grid--bordered" data-test={dataTest}>
+      <div className="table-responsive">
+        <table className="table table-hover">
+          <thead>
+            <tr>
+              {columns.map((column, index) => (
+                <th key={index} role="columnheader">
+                  {column.title}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.cells.map((cell, cellIndex) => (
+                  <td key={cellIndex}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
