@@ -1,9 +1,15 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-
-import { Label } from '@patternfly/react-core';
-import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
+import { 
+  Label, 
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
+  MenuToggleElement,
+} from '@patternfly/react-core';
+import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
@@ -95,6 +101,19 @@ const getConditionStatus = (secretStore: SecretStore) => {
 
 export const SecretStoresTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
+  const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  
+  const toggleDropdown = (storeId: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [storeId]: !prev[storeId]
+    }));
+  };
+
+  const handleInspect = (secretStore: SecretStore) => {
+    console.log('Inspecting secret store:', secretStore);
+    // TODO: Implement inspect functionality
+  };
   
   // Watch both SecretStores and ClusterSecretStores
   const [secretStores, secretStoresLoaded, secretStoresError] = useK8sWatchResource<SecretStore[]>({
@@ -112,12 +131,13 @@ export const SecretStoresTable: React.FC = () => {
   const loadError = secretStoresError || clusterSecretStoresError;
 
   const columns = [
-    { title: t('Name'), width: 18 },
-    { title: t('Type'), width: 12 },
-    { title: t('Scope'), width: 10 },
-    { title: t('Provider'), width: 18 },
-    { title: t('Details'), width: 30 },
+    { title: t('Name'), width: 16 },
+    { title: t('Type'), width: 11 },
+    { title: t('Scope'), width: 9 },
+    { title: t('Provider'), width: 16 },
+    { title: t('Details'), width: 26 },
     { title: t('Status'), width: 12 },
+    { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -132,6 +152,7 @@ export const SecretStoresTable: React.FC = () => {
       const conditionStatus = getConditionStatus(secretStore);
       const providerType = getProviderType(secretStore);
       const providerDetails = getProviderDetails(secretStore);
+      const storeId = `${secretStore.metadata.namespace || 'cluster'}-${secretStore.metadata.name}`;
       
       return {
         cells: [
@@ -145,10 +166,37 @@ export const SecretStoresTable: React.FC = () => {
               {conditionStatus.status}
             </Label>
           ),
+          (
+            <Dropdown
+              isOpen={openDropdowns[storeId] || false}
+              onSelect={() => setOpenDropdowns(prev => ({ ...prev, [storeId]: false }))}
+              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  aria-label="kebab dropdown toggle"
+                  variant="plain"
+                  onClick={() => toggleDropdown(storeId)}
+                  isExpanded={openDropdowns[storeId] || false}
+                >
+                  <EllipsisVIcon />
+                </MenuToggle>
+              )}
+              shouldFocusToggleOnSelect
+            >
+              <DropdownList>
+                <DropdownItem
+                  key="inspect"
+                  onClick={() => handleInspect(secretStore)}
+                >
+                  {t('Inspect')}
+                </DropdownItem>
+              </DropdownList>
+            </Dropdown>
+          ),
         ],
       };
     });
-  }, [secretStores, clusterSecretStores, loaded]);
+  }, [secretStores, clusterSecretStores, loaded, openDropdowns, t]);
 
   return (
     <ResourceTable

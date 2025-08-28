@@ -1,9 +1,15 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-
-import { Label } from '@patternfly/react-core';
-import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, SyncAltIcon } from '@patternfly/react-icons';
+import { 
+  Label, 
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
+  MenuToggleElement,
+} from '@patternfly/react-core';
+import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, SyncAltIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
@@ -76,6 +82,19 @@ const getConditionStatus = (externalSecret: ExternalSecret) => {
 
 export const ExternalSecretsTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
+  const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  
+  const toggleDropdown = (secretId: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [secretId]: !prev[secretId]
+    }));
+  };
+
+  const handleInspect = (externalSecret: ExternalSecret) => {
+    console.log('Inspecting external secret:', externalSecret);
+    // TODO: Implement inspect functionality
+  };
   
   const [externalSecrets, loaded, loadError] = useK8sWatchResource<ExternalSecret[]>({
     groupVersionKind: ExternalSecretModel,
@@ -84,12 +103,13 @@ export const ExternalSecretsTable: React.FC = () => {
   });
 
   const columns = [
-    { title: t('Name'), width: 18 },
-    { title: t('Namespace'), width: 12 },
-    { title: t('Target Secret'), width: 18 },
-    { title: t('Secret Store'), width: 25 },
-    { title: t('Refresh Interval'), width: 15 },
+    { title: t('Name'), width: 16 },
+    { title: t('Namespace'), width: 10 },
+    { title: t('Target Secret'), width: 16 },
+    { title: t('Secret Store'), width: 22 },
+    { title: t('Refresh Interval'), width: 14 },
     { title: t('Status'), width: 12 },
+    { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -98,6 +118,7 @@ export const ExternalSecretsTable: React.FC = () => {
     return externalSecrets.map((externalSecret) => {
       const conditionStatus = getConditionStatus(externalSecret);
       const refreshInterval = externalSecret.spec.refreshInterval || 'Not set';
+      const secretId = `${externalSecret.metadata.namespace}-${externalSecret.metadata.name}`;
       
       return {
         cells: [
@@ -111,10 +132,37 @@ export const ExternalSecretsTable: React.FC = () => {
               {conditionStatus.status}
             </Label>
           ),
+          (
+            <Dropdown
+              isOpen={openDropdowns[secretId] || false}
+              onSelect={() => setOpenDropdowns(prev => ({ ...prev, [secretId]: false }))}
+              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  aria-label="kebab dropdown toggle"
+                  variant="plain"
+                  onClick={() => toggleDropdown(secretId)}
+                  isExpanded={openDropdowns[secretId] || false}
+                >
+                  <EllipsisVIcon />
+                </MenuToggle>
+              )}
+              shouldFocusToggleOnSelect
+            >
+              <DropdownList>
+                <DropdownItem
+                  key="inspect"
+                  onClick={() => handleInspect(externalSecret)}
+                >
+                  {t('Inspect')}
+                </DropdownItem>
+              </DropdownList>
+            </Dropdown>
+          ),
         ],
       };
     });
-  }, [externalSecrets, loaded]);
+  }, [externalSecrets, loaded, openDropdowns, t]);
 
   return (
     <ResourceTable
