@@ -236,7 +236,7 @@ export const CertificatesTable: React.FC = () => {
       
       <Modal
         variant={ModalVariant.small}
-        title={t('Delete {resourceType}', { resourceType: t('Certificate') })}
+        title={`${t('Delete')} ${t('Certificate')}`}
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
@@ -248,10 +248,7 @@ export const CertificatesTable: React.FC = () => {
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              {t('Are you sure you want to delete the {resourceType} "{name}"?', {
-                resourceType: t('Certificate'),
-                name: deleteModal.certificate?.metadata?.name || '',
-              })}
+              {`Are you sure you want to delete the ${t('Certificate')} "${deleteModal.certificate?.metadata?.name || ''}"?`}
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>

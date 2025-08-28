@@ -296,9 +296,7 @@ export const SecretStoresTable: React.FC = () => {
       
       <Modal
         variant={ModalVariant.small}
-        title={t('Delete {resourceType}', { 
-          resourceType: deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')
-        })}
+        title={`${t('Delete')} ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')}`}
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
@@ -310,10 +308,7 @@ export const SecretStoresTable: React.FC = () => {
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              {t('Are you sure you want to delete the {resourceType} "{name}"?', {
-                resourceType: deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore'),
-                name: deleteModal.secretStore?.metadata?.name || '',
-              })}
+              {`Are you sure you want to delete the ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')} "${deleteModal.secretStore?.metadata?.name || ''}"?`}
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>
