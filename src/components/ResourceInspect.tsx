@@ -16,6 +16,7 @@ import {
   DescriptionListGroup,
   Alert,
   AlertVariant,
+  Switch,
 } from '@patternfly/react-core';
 import { ArrowLeftIcon, KeyIcon } from '@patternfly/react-icons';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
@@ -61,6 +62,9 @@ const ClusterSecretStoreModel = {
 
 export const ResourceInspect: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
+  
+  // State for revealing sensitive data
+  const [showSensitiveData, setShowSensitiveData] = React.useState(false);
   
   // Parse URL manually since useParams() isn't working in plugin environment
   const pathname = window.location.pathname;
@@ -231,22 +235,73 @@ export const ResourceInspect: React.FC = () => {
     );
   };
 
+  // Function to mask sensitive data in JSON objects
+  const maskSensitiveData = (obj: any): any => {
+    if (showSensitiveData) {
+      return obj;
+    }
+    
+    const sensitiveKeys = [
+      'password', 'secret', 'token', 'key', 'privateKey', 'secretKey',
+      'accessKey', 'secretAccessKey', 'clientSecret', 'apiKey', 'auth',
+      'authentication', 'credential', 'cert', 'certificate', 'tls'
+    ];
+    
+    const maskObject = (data: any): any => {
+      if (Array.isArray(data)) {
+        return data.map(maskObject);
+      }
+      
+      if (data && typeof data === 'object') {
+        const masked: any = {};
+        for (const [key, value] of Object.entries(data)) {
+          const lowerKey = key.toLowerCase();
+          const isSensitive = sensitiveKeys.some(sensitiveKey => 
+            lowerKey.includes(sensitiveKey.toLowerCase())
+          );
+          
+          if (isSensitive && typeof value === 'string') {
+            masked[key] = '***HIDDEN***';
+          } else {
+            masked[key] = maskObject(value);
+          }
+        }
+        return masked;
+      }
+      
+      return data;
+    };
+    
+    return maskObject(obj);
+  };
+
   const renderSpecification = () => {
     if (!resource?.spec) return null;
 
     return (
       <Card>
-        <CardTitle>{t('Specification')}</CardTitle>
+        <CardTitle>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {t('Specification')}
+            <Switch
+              id="spec-sensitive-toggle"
+              label={showSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
+              isChecked={showSensitiveData}
+              onChange={(event, checked) => setShowSensitiveData(checked)}
+              ouiaId="SpecificationSensitiveToggle"
+            />
+          </div>
+        </CardTitle>
         <CardBody>
           <pre style={{ 
-            backgroundColor: '#f5f5f5', 
             padding: '16px', 
             borderRadius: '4px',
             overflow: 'auto',
             fontSize: '12px',
-            maxHeight: '400px'
+            maxHeight: '400px',
+            border: '1px solid #d2d2d2'
           }}>
-            {JSON.stringify(resource.spec, null, 2)}
+            {JSON.stringify(maskSensitiveData(resource.spec), null, 2)}
           </pre>
         </CardBody>
       </Card>
@@ -258,17 +313,28 @@ export const ResourceInspect: React.FC = () => {
 
     return (
       <Card>
-        <CardTitle>{t('Status')}</CardTitle>
+        <CardTitle>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {t('Status')}
+            <Switch
+              id="status-sensitive-toggle"
+              label={showSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
+              isChecked={showSensitiveData}
+              onChange={(event, checked) => setShowSensitiveData(checked)}
+              ouiaId="StatusSensitiveToggle"
+            />
+          </div>
+        </CardTitle>
         <CardBody>
           <pre style={{ 
-            backgroundColor: '#f5f5f5', 
             padding: '16px', 
             borderRadius: '4px',
             overflow: 'auto',
             fontSize: '12px',
-            maxHeight: '400px'
+            maxHeight: '400px',
+            border: '1px solid #d2d2d2'
           }}>
-            {JSON.stringify(resource.status, null, 2)}
+            {JSON.stringify(maskSensitiveData(resource.status), null, 2)}
           </pre>
         </CardBody>
       </Card>
