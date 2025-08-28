@@ -8,10 +8,15 @@ import {
   DropdownList,
   MenuToggle,
   MenuToggleElement,
+  Modal,
+  ModalVariant,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
 
 // Certificate custom resource definition from cert-manager
 const CertificateModel = {
@@ -66,6 +71,17 @@ const getConditionStatus = (certificate: Certificate) => {
 export const CertificatesTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  const [deleteModal, setDeleteModal] = React.useState<{
+    isOpen: boolean;
+    certificate: Certificate | null;
+    isDeleting: boolean;
+    error: string | null;
+  }>({
+    isOpen: false,
+    certificate: null,
+    isDeleting: false,
+    error: null,
+  });
   
   const toggleDropdown = (certId: string) => {
     setOpenDropdowns(prev => ({
@@ -78,6 +94,58 @@ export const CertificatesTable: React.FC = () => {
     const namespace = cert.metadata.namespace || 'demo';
     const name = cert.metadata.name;
     window.location.href = `/secrets-management/inspect/certificates/${namespace}/${name}`;
+  };
+
+  const handleDelete = (cert: Certificate) => {
+    setDeleteModal({
+      isOpen: true,
+      certificate: cert,
+      isDeleting: false,
+      error: null,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.certificate) return;
+    
+    setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    
+    try {
+      await k8sDelete({
+        model: {
+          ...CertificateModel,
+          abbr: 'cert',
+          label: 'Certificate',
+          labelPlural: 'Certificates',
+          plural: 'certificates',
+          apiVersion: `${CertificateModel.group}/${CertificateModel.version}`,
+        },
+        resource: deleteModal.certificate,
+      });
+      
+      // Close modal on success
+      setDeleteModal({
+        isOpen: false,
+        certificate: null,
+        isDeleting: false,
+        error: null,
+      });
+    } catch (error: any) {
+      setDeleteModal(prev => ({
+        ...prev,
+        isDeleting: false,
+        error: error.message || 'Failed to delete certificate',
+      }));
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      certificate: null,
+      isDeleting: false,
+      error: null,
+    });
   };
 
   const [certificates, loaded, loadError] = useK8sWatchResource<Certificate[]>({
@@ -140,6 +208,12 @@ export const CertificatesTable: React.FC = () => {
                 >
                   {t('Inspect')}
                 </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={() => handleDelete(cert)}
+                >
+                  {t('Delete')}
+                </DropdownItem>
               </DropdownList>
             </Dropdown>
           ),
@@ -149,14 +223,53 @@ export const CertificatesTable: React.FC = () => {
   }, [certificates, loaded, openDropdowns, t]);
 
   return (
-    <ResourceTable
-      columns={columns}
-      rows={rows}
-      loading={!loaded}
-      error={loadError?.message}
-      emptyStateTitle={t('No certificates found')}
-      emptyStateBody={t('No cert-manager certificates are currently available in the demo project.')}
-      data-test="certificates-table"
-    />
+    <>
+      <ResourceTable
+        columns={columns}
+        rows={rows}
+        loading={!loaded}
+        error={loadError?.message}
+        emptyStateTitle={t('No certificates found')}
+        emptyStateBody={t('No cert-manager certificates are currently available in the demo project.')}
+        data-test="certificates-table"
+      />
+      
+      <Modal
+        variant={ModalVariant.small}
+        title={t('Delete {resourceType}', { resourceType: t('Certificate') })}
+        isOpen={deleteModal.isOpen}
+        onClose={cancelDelete}
+      >
+        {deleteModal.error && (
+          <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1rem' }}>
+            {deleteModal.error}
+          </Alert>
+        )}
+        <p>
+          {t('Are you sure you want to delete the {resourceType} "{name}"?', {
+            resourceType: t('Certificate'),
+            name: deleteModal.certificate?.metadata?.name || '',
+          })}
+        </p>
+        <p>
+          <strong>{t('This action cannot be undone.')}</strong>
+        </p>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <Button key="cancel" variant="link" onClick={cancelDelete}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            key="confirm"
+            variant="danger"
+            onClick={confirmDelete}
+            isDisabled={deleteModal.isDeleting}
+            isLoading={deleteModal.isDeleting}
+            spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+          >
+            {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 };

@@ -8,10 +8,15 @@ import {
   DropdownList,
   MenuToggle,
   MenuToggleElement,
+  Modal,
+  ModalVariant,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
 
 // Issuer and ClusterIssuer models from cert-manager
 const IssuerModel = {
@@ -82,6 +87,17 @@ const getConditionStatus = (issuer: Issuer) => {
 export const IssuersTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  const [deleteModal, setDeleteModal] = React.useState<{
+    isOpen: boolean;
+    issuer: Issuer | null;
+    isDeleting: boolean;
+    error: string | null;
+  }>({
+    isOpen: false,
+    issuer: null,
+    isDeleting: false,
+    error: null,
+  });
   
   const toggleDropdown = (issuerId: string) => {
     setOpenDropdowns(prev => ({
@@ -98,6 +114,62 @@ export const IssuersTable: React.FC = () => {
     } else {
       window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
     }
+  };
+
+  const handleDelete = (issuer: Issuer) => {
+    setDeleteModal({
+      isOpen: true,
+      issuer,
+      isDeleting: false,
+      error: null,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.issuer) return;
+    
+    setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    
+    try {
+      const isClusterScoped = !deleteModal.issuer.metadata.namespace;
+      const model = isClusterScoped ? ClusterIssuerModel : IssuerModel;
+      const resourceType = isClusterScoped ? 'ClusterIssuer' : 'Issuer';
+      
+      await k8sDelete({
+        model: {
+          ...model,
+          abbr: isClusterScoped ? 'clusterissuer' : 'issuer',
+          label: resourceType,
+          labelPlural: `${resourceType}s`,
+          plural: isClusterScoped ? 'clusterissuers' : 'issuers',
+          apiVersion: `${model.group}/${model.version}`,
+        },
+        resource: deleteModal.issuer,
+      });
+      
+      // Close modal on success
+      setDeleteModal({
+        isOpen: false,
+        issuer: null,
+        isDeleting: false,
+        error: null,
+      });
+    } catch (error: any) {
+      setDeleteModal(prev => ({
+        ...prev,
+        isDeleting: false,
+        error: error.message || 'Failed to delete issuer',
+      }));
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      issuer: null,
+      isDeleting: false,
+      error: null,
+    });
   };
   
   // Watch both Issuers and ClusterIssuers
@@ -183,6 +255,12 @@ export const IssuersTable: React.FC = () => {
                 >
                   {t('Inspect')}
                 </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={() => handleDelete(issuer)}
+                >
+                  {t('Delete')}
+                </DropdownItem>
               </DropdownList>
             </Dropdown>
           ),
@@ -192,14 +270,55 @@ export const IssuersTable: React.FC = () => {
   }, [issuers, clusterIssuers, loaded, openDropdowns, t]);
 
   return (
-    <ResourceTable
-      columns={columns}
-      rows={rows}
-      loading={!loaded}
-      error={loadError?.message}
-      emptyStateTitle={t('No issuers found')}
-      emptyStateBody={t('No cert-manager issuers are currently available in the demo project or cluster.')}
-      data-test="issuers-table"
-    />
+    <>
+      <ResourceTable
+        columns={columns}
+        rows={rows}
+        loading={!loaded}
+        error={loadError?.message}
+        emptyStateTitle={t('No issuers found')}
+        emptyStateBody={t('No cert-manager issuers are currently available in the demo project or cluster.')}
+        data-test="issuers-table"
+      />
+      
+      <Modal
+        variant={ModalVariant.small}
+        title={t('Delete {resourceType}', { 
+          resourceType: deleteModal.issuer?.metadata?.namespace ? t('Issuer') : t('ClusterIssuer')
+        })}
+        isOpen={deleteModal.isOpen}
+        onClose={cancelDelete}
+      >
+        {deleteModal.error && (
+          <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1rem' }}>
+            {deleteModal.error}
+          </Alert>
+        )}
+        <p>
+          {t('Are you sure you want to delete the {resourceType} "{name}"?', {
+            resourceType: deleteModal.issuer?.metadata?.namespace ? t('Issuer') : t('ClusterIssuer'),
+            name: deleteModal.issuer?.metadata?.name || '',
+          })}
+        </p>
+        <p>
+          <strong>{t('This action cannot be undone.')}</strong>
+        </p>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <Button key="cancel" variant="link" onClick={cancelDelete}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            key="confirm"
+            variant="danger"
+            onClick={confirmDelete}
+            isDisabled={deleteModal.isDeleting}
+            isLoading={deleteModal.isDeleting}
+            spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+          >
+            {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 };

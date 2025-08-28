@@ -8,10 +8,15 @@ import {
   DropdownList,
   MenuToggle,
   MenuToggleElement,
+  Modal,
+  ModalVariant,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
 
 // SecretStore and ClusterSecretStore models from external-secrets-operator
 const SecretStoreModel = {
@@ -110,6 +115,18 @@ export const SecretStoresTable: React.FC = () => {
     }));
   };
 
+  const [deleteModal, setDeleteModal] = React.useState<{
+    isOpen: boolean;
+    secretStore: SecretStore | null;
+    isDeleting: boolean;
+    error: string | null;
+  }>({
+    isOpen: false,
+    secretStore: null,
+    isDeleting: false,
+    error: null,
+  });
+
   const handleInspect = (secretStore: SecretStore) => {
     const resourceType = secretStore.metadata.namespace ? 'secretstores' : 'clustersecretstores';
     const name = secretStore.metadata.name;
@@ -118,6 +135,62 @@ export const SecretStoresTable: React.FC = () => {
     } else {
       window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
     }
+  };
+
+  const handleDelete = (secretStore: SecretStore) => {
+    setDeleteModal({
+      isOpen: true,
+      secretStore,
+      isDeleting: false,
+      error: null,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.secretStore) return;
+    
+    setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    
+    try {
+      const isClusterScoped = !deleteModal.secretStore.metadata.namespace;
+      const model = isClusterScoped ? ClusterSecretStoreModel : SecretStoreModel;
+      const resourceType = isClusterScoped ? 'ClusterSecretStore' : 'SecretStore';
+      
+      await k8sDelete({
+        model: {
+          ...model,
+          abbr: isClusterScoped ? 'clustersecretstore' : 'secretstore',
+          label: resourceType,
+          labelPlural: `${resourceType}s`,
+          plural: isClusterScoped ? 'clustersecretstores' : 'secretstores',
+          apiVersion: `${model.group}/${model.version}`,
+        },
+        resource: deleteModal.secretStore,
+      });
+      
+      // Close modal on success
+      setDeleteModal({
+        isOpen: false,
+        secretStore: null,
+        isDeleting: false,
+        error: null,
+      });
+    } catch (error: any) {
+      setDeleteModal(prev => ({
+        ...prev,
+        isDeleting: false,
+        error: error.message || 'Failed to delete secret store',
+      }));
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      secretStore: null,
+      isDeleting: false,
+      error: null,
+    });
   };
   
   // Watch both SecretStores and ClusterSecretStores
@@ -195,6 +268,12 @@ export const SecretStoresTable: React.FC = () => {
                 >
                   {t('Inspect')}
                 </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={() => handleDelete(secretStore)}
+                >
+                  {t('Delete')}
+                </DropdownItem>
               </DropdownList>
             </Dropdown>
           ),
@@ -204,14 +283,55 @@ export const SecretStoresTable: React.FC = () => {
   }, [secretStores, clusterSecretStores, loaded, openDropdowns, t]);
 
   return (
-    <ResourceTable
-      columns={columns}
-      rows={rows}
-      loading={!loaded}
-      error={loadError?.message}
-      emptyStateTitle={t('No secret stores found')}
-      emptyStateBody={t('No external-secrets-operator SecretStores are currently available in the demo project or cluster.')}
-      data-test="secret-stores-table"
-    />
+    <>
+      <ResourceTable
+        columns={columns}
+        rows={rows}
+        loading={!loaded}
+        error={loadError?.message}
+        emptyStateTitle={t('No secret stores found')}
+        emptyStateBody={t('No external-secrets-operator SecretStores are currently available in the demo project or cluster.')}
+        data-test="secret-stores-table"
+      />
+      
+      <Modal
+        variant={ModalVariant.small}
+        title={t('Delete {resourceType}', { 
+          resourceType: deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')
+        })}
+        isOpen={deleteModal.isOpen}
+        onClose={cancelDelete}
+      >
+        {deleteModal.error && (
+          <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1rem' }}>
+            {deleteModal.error}
+          </Alert>
+        )}
+        <p>
+          {t('Are you sure you want to delete the {resourceType} "{name}"?', {
+            resourceType: deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore'),
+            name: deleteModal.secretStore?.metadata?.name || '',
+          })}
+        </p>
+        <p>
+          <strong>{t('This action cannot be undone.')}</strong>
+        </p>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <Button key="cancel" variant="link" onClick={cancelDelete}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            key="confirm"
+            variant="danger"
+            onClick={confirmDelete}
+            isDisabled={deleteModal.isDeleting}
+            isLoading={deleteModal.isDeleting}
+            spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+          >
+            {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 };

@@ -8,10 +8,15 @@ import {
   DropdownList,
   MenuToggle,
   MenuToggleElement,
+  Modal,
+  ModalVariant,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, SyncAltIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
 
 // ExternalSecret custom resource definition from external-secrets-operator
 const ExternalSecretModel = {
@@ -83,6 +88,17 @@ const getConditionStatus = (externalSecret: ExternalSecret) => {
 export const ExternalSecretsTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  const [deleteModal, setDeleteModal] = React.useState<{
+    isOpen: boolean;
+    externalSecret: ExternalSecret | null;
+    isDeleting: boolean;
+    error: string | null;
+  }>({
+    isOpen: false,
+    externalSecret: null,
+    isDeleting: false,
+    error: null,
+  });
   
   const toggleDropdown = (secretId: string) => {
     setOpenDropdowns(prev => ({
@@ -95,6 +111,58 @@ export const ExternalSecretsTable: React.FC = () => {
     const namespace = externalSecret.metadata.namespace || 'demo';
     const name = externalSecret.metadata.name;
     window.location.href = `/secrets-management/inspect/externalsecrets/${namespace}/${name}`;
+  };
+
+  const handleDelete = (externalSecret: ExternalSecret) => {
+    setDeleteModal({
+      isOpen: true,
+      externalSecret,
+      isDeleting: false,
+      error: null,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.externalSecret) return;
+    
+    setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    
+    try {
+      await k8sDelete({
+        model: {
+          ...ExternalSecretModel,
+          abbr: 'externalsecret',
+          label: 'ExternalSecret',
+          labelPlural: 'ExternalSecrets',
+          plural: 'externalsecrets',
+          apiVersion: `${ExternalSecretModel.group}/${ExternalSecretModel.version}`,
+        },
+        resource: deleteModal.externalSecret,
+      });
+      
+      // Close modal on success
+      setDeleteModal({
+        isOpen: false,
+        externalSecret: null,
+        isDeleting: false,
+        error: null,
+      });
+    } catch (error: any) {
+      setDeleteModal(prev => ({
+        ...prev,
+        isDeleting: false,
+        error: error.message || 'Failed to delete external secret',
+      }));
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      externalSecret: null,
+      isDeleting: false,
+      error: null,
+    });
   };
   
   const [externalSecrets, loaded, loadError] = useK8sWatchResource<ExternalSecret[]>({
@@ -157,6 +225,12 @@ export const ExternalSecretsTable: React.FC = () => {
                 >
                   {t('Inspect')}
                 </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={() => handleDelete(externalSecret)}
+                >
+                  {t('Delete')}
+                </DropdownItem>
               </DropdownList>
             </Dropdown>
           ),
@@ -166,14 +240,53 @@ export const ExternalSecretsTable: React.FC = () => {
   }, [externalSecrets, loaded, openDropdowns, t]);
 
   return (
-    <ResourceTable
-      columns={columns}
-      rows={rows}
-      loading={!loaded}
-      error={loadError?.message}
-      emptyStateTitle={t('No external secrets found')}
-      emptyStateBody={t('No external-secrets-operator ExternalSecrets are currently available in the demo project.')}
-      data-test="external-secrets-table"
-    />
+    <>
+      <ResourceTable
+        columns={columns}
+        rows={rows}
+        loading={!loaded}
+        error={loadError?.message}
+        emptyStateTitle={t('No external secrets found')}
+        emptyStateBody={t('No external-secrets-operator ExternalSecrets are currently available in the demo project.')}
+        data-test="external-secrets-table"
+      />
+      
+      <Modal
+        variant={ModalVariant.small}
+        title={t('Delete {resourceType}', { resourceType: t('ExternalSecret') })}
+        isOpen={deleteModal.isOpen}
+        onClose={cancelDelete}
+      >
+        {deleteModal.error && (
+          <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1rem' }}>
+            {deleteModal.error}
+          </Alert>
+        )}
+        <p>
+          {t('Are you sure you want to delete the {resourceType} "{name}"?', {
+            resourceType: t('ExternalSecret'),
+            name: deleteModal.externalSecret?.metadata?.name || '',
+          })}
+        </p>
+        <p>
+          <strong>{t('This action cannot be undone.')}</strong>
+        </p>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <Button key="cancel" variant="link" onClick={cancelDelete}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            key="confirm"
+            variant="danger"
+            onClick={confirmDelete}
+            isDisabled={deleteModal.isDeleting}
+            isLoading={deleteModal.isDeleting}
+            spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+          >
+            {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 };
