@@ -112,12 +112,12 @@ export const SecretStoresTable: React.FC = () => {
   const loadError = secretStoresError || clusterSecretStoresError;
 
   const columns = [
-    { title: t('Name'), width: 20 },
+    { title: t('Name'), width: 18 },
     { title: t('Type'), width: 15 },
     { title: t('Scope'), width: 10 },
-    { title: t('Provider'), width: 15 },
-    { title: t('Status'), width: 15 },
-    { title: t('Details'), width: 25 },
+    { title: t('Provider'), width: 17 },
+    { title: t('Status'), width: 12 },
+    { title: t('Details'), width: 28 },
   ];
 
   const rows = React.useMemo(() => {

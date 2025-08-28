@@ -84,12 +84,12 @@ export const ExternalSecretsTable: React.FC = () => {
   });
 
   const columns = [
-    { title: t('Name'), width: 20 },
-    { title: t('Namespace'), width: 15 },
-    { title: t('Target Secret'), width: 20 },
-    { title: t('Secret Store'), width: 20 },
-    { title: t('Status'), width: 15 },
-    { title: t('Refresh Interval'), width: 10 },
+    { title: t('Name'), width: 18 },
+    { title: t('Namespace'), width: 12 },
+    { title: t('Target Secret'), width: 18 },
+    { title: t('Secret Store'), width: 25 },
+    { title: t('Status'), width: 12 },
+    { title: t('Refresh Interval'), width: 15 },
   ];
 
   const rows = React.useMemo(() => {

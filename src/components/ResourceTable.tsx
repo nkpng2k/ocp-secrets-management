@@ -79,24 +79,55 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
     );
   }
 
+  // Calculate column widths - distribute evenly if no widths specified
+  const totalSpecifiedWidth = columns.reduce((sum, col) => sum + (col.width || 0), 0);
+  const hasSpecifiedWidths = totalSpecifiedWidth > 0;
+  const defaultWidth = hasSpecifiedWidths ? undefined : 100 / columns.length;
+
   return (
     <div className="co-m-table-grid co-m-table-grid--bordered" data-test={dataTest}>
       <div className="table-responsive">
-        <table className="table table-hover">
+        <table className="table table-hover" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
-              {columns.map((column, index) => (
-                <th key={index} role="columnheader">
-                  {column.title}
-                </th>
-              ))}
+              {columns.map((column, index) => {
+                const width = hasSpecifiedWidths 
+                  ? `${(column.width || 0)}%`
+                  : `${defaultWidth}%`;
+                
+                return (
+                  <th 
+                    key={index} 
+                    role="columnheader"
+                    style={{ 
+                      width,
+                      paddingLeft: '1rem',
+                      paddingRight: '1rem',
+                      textAlign: 'left',
+                      verticalAlign: 'middle'
+                    }}
+                  >
+                    {column.title}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {row.cells.map((cell, cellIndex) => (
-                  <td key={cellIndex}>
+                  <td 
+                    key={cellIndex}
+                    style={{
+                      paddingLeft: '1rem',
+                      paddingRight: '1rem',
+                      textAlign: 'left',
+                      verticalAlign: 'middle',
+                      wordWrap: 'break-word',
+                      overflow: 'hidden'
+                    }}
+                  >
                     {cell}
                   </td>
                 ))}
