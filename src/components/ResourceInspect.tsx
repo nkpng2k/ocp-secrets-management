@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
 import Helmet from 'react-helmet';
 import {
   Title,
@@ -58,15 +57,40 @@ const ClusterSecretStoreModel = {
   kind: 'ClusterSecretStore',
 };
 
-interface RouteParams {
-  resourceType: string;
-  namespace?: string;
-  name: string;
-}
+
 
 export const ResourceInspect: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
-  const { resourceType, namespace, name } = useParams<RouteParams>();
+  
+  // Parse URL manually since useParams() isn't working in plugin environment
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/');
+  
+  // Expected format: /secrets-management/inspect/{resourceType}/{namespace}/{name}
+  // or: /secrets-management/inspect/{resourceType}/{name} (for cluster-scoped)
+  const baseIndex = pathParts.findIndex(part => part === 'inspect');
+  const resourceType = baseIndex >= 0 && pathParts.length > baseIndex + 1 ? pathParts[baseIndex + 1] : '';
+  
+  let namespace: string | undefined;
+  let name: string;
+  
+  if (pathParts.length > baseIndex + 3) {
+    // Format: /secrets-management/inspect/{resourceType}/{namespace}/{name}
+    namespace = pathParts[baseIndex + 2];
+    name = pathParts[baseIndex + 3];
+  } else {
+    // Format: /secrets-management/inspect/{resourceType}/{name} (cluster-scoped)
+    name = pathParts[baseIndex + 2] || '';
+  }
+
+  // Debug logging
+  console.log('Manual URL parsing:');
+  console.log('  pathname:', pathname);
+  console.log('  pathParts:', pathParts);
+  console.log('  baseIndex:', baseIndex);
+  console.log('  resourceType:', resourceType);
+  console.log('  namespace:', namespace);
+  console.log('  name:', name);
 
   const handleBackClick = () => {
     window.history.back();
@@ -282,6 +306,10 @@ export const ResourceInspect: React.FC = () => {
       <div className="co-m-pane__body">
         <Alert variant={AlertVariant.danger} title={t('Invalid resource type')} isInline>
           {t('The resource type "{resourceType}" is not supported.', { resourceType })}
+          <br />
+          <strong>Debug info:</strong> URL: {window.location.href}, Pathname: {window.location.pathname}
+          <br />
+          Params: resourceType="{resourceType}", namespace="{namespace}", name="{name}"
         </Alert>
       </div>
     );
