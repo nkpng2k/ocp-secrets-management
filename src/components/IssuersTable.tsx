@@ -135,6 +135,8 @@ export const IssuersTable: React.FC = () => {
       const model = isClusterScoped ? ClusterIssuerModel : IssuerModel;
       const resourceType = isClusterScoped ? 'ClusterIssuer' : 'Issuer';
       
+      console.log('Deleting issuer:', deleteModal.issuer?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.issuer?.metadata?.namespace);
+      
       await k8sDelete({
         model: {
           ...model,
@@ -155,6 +157,7 @@ export const IssuersTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
+      console.error('Delete issuer error:', error);
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,

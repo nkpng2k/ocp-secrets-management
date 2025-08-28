@@ -156,6 +156,8 @@ export const SecretStoresTable: React.FC = () => {
       const model = isClusterScoped ? ClusterSecretStoreModel : SecretStoreModel;
       const resourceType = isClusterScoped ? 'ClusterSecretStore' : 'SecretStore';
       
+      console.log('Deleting secret store:', deleteModal.secretStore?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.secretStore?.metadata?.namespace);
+      
       await k8sDelete({
         model: {
           ...model,
@@ -176,6 +178,7 @@ export const SecretStoresTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
+      console.error('Delete secret store error:', error);
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,

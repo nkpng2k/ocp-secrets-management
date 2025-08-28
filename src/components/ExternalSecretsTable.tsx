@@ -128,12 +128,14 @@ export const ExternalSecretsTable: React.FC = () => {
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
+      console.log('Deleting external secret:', deleteModal.externalSecret?.metadata?.name, 'in namespace:', deleteModal.externalSecret?.metadata?.namespace);
+      
       await k8sDelete({
         model: {
           ...ExternalSecretModel,
           abbr: 'externalsecret',
           label: 'ExternalSecret',
-          labelPlural: 'ExternalSecrets',
+          labelPlural: 'ExternalSecrets', 
           plural: 'externalsecrets',
           apiVersion: `${ExternalSecretModel.group}/${ExternalSecretModel.version}`,
         },
@@ -148,6 +150,7 @@ export const ExternalSecretsTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
+      console.error('Delete external secret error:', error);
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,

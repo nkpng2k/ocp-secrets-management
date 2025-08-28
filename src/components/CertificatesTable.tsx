@@ -111,11 +111,13 @@ export const CertificatesTable: React.FC = () => {
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
+      console.log('Deleting certificate:', deleteModal.certificate?.metadata?.name, 'in namespace:', deleteModal.certificate?.metadata?.namespace);
+      
       await k8sDelete({
         model: {
           ...CertificateModel,
           abbr: 'cert',
-          label: 'Certificate',
+          label: 'Certificate', 
           labelPlural: 'Certificates',
           plural: 'certificates',
           apiVersion: `${CertificateModel.group}/${CertificateModel.version}`,
@@ -131,6 +133,7 @@ export const CertificatesTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
+      console.error('Delete error:', error);
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,
