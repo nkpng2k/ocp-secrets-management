@@ -3,6 +3,24 @@
     "type": "console.page/route",
     "properties": {
       "exact": true,
+      "path": "/secrets-management",
+      "component": { "$codeRef": "SecretsManagement" }
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "secrets-management",
+      "name": "%plugin__ocp-secrets-management~Secrets Management%",
+      "href": "/secrets-management",
+      "perspective": "admin",
+      "section": "workloads"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
       "path": "/example",
       "component": { "$codeRef": "ExamplePage" }
     }

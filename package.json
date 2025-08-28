@@ -74,7 +74,8 @@
     "displayName": "OCP Secrets Management",
     "description": "OpenShift Console plugin for managing secrets and sensitive data.",
     "exposedModules": {
-      "ExamplePage": "./components/ExamplePage"
+      "ExamplePage": "./components/ExamplePage",
+      "SecretsManagement": "./components/SecretsManagement"
     },
     "dependencies": {
       "@console/pluginAPI": "*"
