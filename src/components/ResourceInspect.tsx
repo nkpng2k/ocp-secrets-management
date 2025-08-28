@@ -83,14 +83,7 @@ export const ResourceInspect: React.FC = () => {
     name = pathParts[baseIndex + 2] || '';
   }
 
-  // Debug logging
-  console.log('Manual URL parsing:');
-  console.log('  pathname:', pathname);
-  console.log('  pathParts:', pathParts);
-  console.log('  baseIndex:', baseIndex);
-  console.log('  resourceType:', resourceType);
-  console.log('  namespace:', namespace);
-  console.log('  name:', name);
+
 
   const handleBackClick = () => {
     window.history.back();
@@ -306,10 +299,6 @@ export const ResourceInspect: React.FC = () => {
       <div className="co-m-pane__body">
         <Alert variant={AlertVariant.danger} title={t('Invalid resource type')} isInline>
           {t('The resource type "{resourceType}" is not supported.', { resourceType })}
-          <br />
-          <strong>Debug info:</strong> URL: {window.location.href}, Pathname: {window.location.pathname}
-          <br />
-          Params: resourceType="{resourceType}", namespace="{namespace}", name="{name}"
         </Alert>
       </div>
     );
