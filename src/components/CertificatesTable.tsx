@@ -240,34 +240,38 @@ export const CertificatesTable: React.FC = () => {
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
-        {deleteModal.error && (
-          <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1rem' }}>
-            {deleteModal.error}
-          </Alert>
-        )}
-        <p>
-          {t('Are you sure you want to delete the {resourceType} "{name}"?', {
-            resourceType: t('Certificate'),
-            name: deleteModal.certificate?.metadata?.name || '',
-          })}
-        </p>
-        <p>
-          <strong>{t('This action cannot be undone.')}</strong>
-        </p>
-        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-          <Button key="cancel" variant="link" onClick={cancelDelete}>
-            {t('Cancel')}
-          </Button>
-          <Button
-            key="confirm"
-            variant="danger"
-            onClick={confirmDelete}
-            isDisabled={deleteModal.isDeleting}
-            isLoading={deleteModal.isDeleting}
-            spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
-          >
-            {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
-          </Button>
+        <div style={{ padding: '1.5rem' }}>
+          {deleteModal.error && (
+            <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1.5rem' }}>
+              {deleteModal.error}
+            </Alert>
+          )}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
+              {t('Are you sure you want to delete the {resourceType} "{name}"?', {
+                resourceType: t('Certificate'),
+                name: deleteModal.certificate?.metadata?.name || '',
+              })}
+            </p>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
+              <strong>{t('This action cannot be undone.')}</strong>
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid #e1e5e9' }}>
+            <Button key="cancel" variant="link" onClick={cancelDelete}>
+              {t('Cancel')}
+            </Button>
+            <Button
+              key="confirm"
+              variant="danger"
+              onClick={confirmDelete}
+              isDisabled={deleteModal.isDeleting}
+              isLoading={deleteModal.isDeleting}
+              spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+            >
+              {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+            </Button>
+          </div>
         </div>
       </Modal>
     </>
