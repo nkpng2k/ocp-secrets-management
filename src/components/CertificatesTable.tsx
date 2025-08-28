@@ -120,6 +120,9 @@ export const CertificatesTable: React.FC = () => {
           label: 'Certificate', 
           labelPlural: 'Certificates',
           plural: 'certificates',
+          apiVersion: `${CertificateModel.group}/${CertificateModel.version}`,
+          crd: true,
+          namespaced: true,
         },
         resource: deleteModal.certificate,
       });
