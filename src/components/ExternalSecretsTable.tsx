@@ -16,7 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, SyncAltIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // ExternalSecret custom resource definition from external-secrets-operator
 const ExternalSecretModel = {
@@ -130,19 +130,23 @@ export const ExternalSecretsTable: React.FC = () => {
     try {
       console.log('Deleting external secret:', deleteModal.externalSecret?.metadata?.name, 'in namespace:', deleteModal.externalSecret?.metadata?.namespace);
       
-      await k8sDelete({
-        model: {
-          ...ExternalSecretModel,
-          abbr: 'externalsecret',
-          label: 'ExternalSecret',
-          labelPlural: 'ExternalSecrets', 
-          plural: 'externalsecrets',
-          apiVersion: `${ExternalSecretModel.group}/${ExternalSecretModel.version}`,
-          crd: true,
-          namespaced: true,
+      // Manual delete using fetch to bypass k8sDelete API path issues
+      const resourceName = deleteModal.externalSecret?.metadata?.name;
+      const resourceNamespace = deleteModal.externalSecret?.metadata?.namespace;
+      const apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/externalsecrets/${resourceName}`;
+      
+      console.log('Using manual API path:', apiPath);
+      
+      const response = await fetch(apiPath, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        resource: deleteModal.externalSecret,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+      }
       
       // Close modal on success
       setDeleteModal({

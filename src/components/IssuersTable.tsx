@@ -16,7 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // Issuer and ClusterIssuer models from cert-manager
 const IssuerModel = {
@@ -132,24 +132,33 @@ export const IssuersTable: React.FC = () => {
     
     try {
       const isClusterScoped = !deleteModal.issuer.metadata.namespace;
-      const model = isClusterScoped ? ClusterIssuerModel : IssuerModel;
       const resourceType = isClusterScoped ? 'ClusterIssuer' : 'Issuer';
       
       console.log('Deleting issuer:', deleteModal.issuer?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.issuer?.metadata?.namespace);
       
-      await k8sDelete({
-        model: {
-          ...model,
-          abbr: isClusterScoped ? 'clusterissuer' : 'issuer',
-          label: resourceType,
-          labelPlural: `${resourceType}s`,
-          plural: isClusterScoped ? 'clusterissuers' : 'issuers',
-          apiVersion: `${model.group}/${model.version}`,
-          crd: true,
-          namespaced: !isClusterScoped,
+      // Manual delete using fetch to bypass k8sDelete API path issues
+      const resourceName = deleteModal.issuer?.metadata?.name;
+      const resourceNamespace = deleteModal.issuer?.metadata?.namespace;
+      
+      let apiPath: string;
+      if (isClusterScoped) {
+        apiPath = `/api/kubernetes/apis/cert-manager.io/v1/clusterissuers/${resourceName}`;
+      } else {
+        apiPath = `/api/kubernetes/apis/cert-manager.io/v1/namespaces/${resourceNamespace}/issuers/${resourceName}`;
+      }
+      
+      console.log('Using manual API path:', apiPath);
+      
+      const response = await fetch(apiPath, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        resource: deleteModal.issuer,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+      }
       
       // Close modal on success
       setDeleteModal({

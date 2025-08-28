@@ -16,7 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // SecretStore and ClusterSecretStore models from external-secrets-operator
 const SecretStoreModel = {
@@ -153,24 +153,33 @@ export const SecretStoresTable: React.FC = () => {
     
     try {
       const isClusterScoped = !deleteModal.secretStore.metadata.namespace;
-      const model = isClusterScoped ? ClusterSecretStoreModel : SecretStoreModel;
       const resourceType = isClusterScoped ? 'ClusterSecretStore' : 'SecretStore';
       
       console.log('Deleting secret store:', deleteModal.secretStore?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.secretStore?.metadata?.namespace);
       
-      await k8sDelete({
-        model: {
-          ...model,
-          abbr: isClusterScoped ? 'clustersecretstore' : 'secretstore',
-          label: resourceType,
-          labelPlural: `${resourceType}s`,
-          plural: isClusterScoped ? 'clustersecretstores' : 'secretstores',
-          apiVersion: `${model.group}/${model.version}`,
-          crd: true,
-          namespaced: !isClusterScoped,
+      // Manual delete using fetch to bypass k8sDelete API path issues
+      const resourceName = deleteModal.secretStore?.metadata?.name;
+      const resourceNamespace = deleteModal.secretStore?.metadata?.namespace;
+      
+      let apiPath: string;
+      if (isClusterScoped) {
+        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/clustersecretstores/${resourceName}`;
+      } else {
+        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/secretstores/${resourceName}`;
+      }
+      
+      console.log('Using manual API path:', apiPath);
+      
+      const response = await fetch(apiPath, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        resource: deleteModal.secretStore,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+      }
       
       // Close modal on success
       setDeleteModal({

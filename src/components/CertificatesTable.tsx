@@ -16,7 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource, k8sDelete } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // Certificate custom resource definition from cert-manager
 const CertificateModel = {
@@ -113,19 +113,23 @@ export const CertificatesTable: React.FC = () => {
     try {
       console.log('Deleting certificate:', deleteModal.certificate?.metadata?.name, 'in namespace:', deleteModal.certificate?.metadata?.namespace);
       
-      await k8sDelete({
-        model: {
-          ...CertificateModel,
-          abbr: 'cert',
-          label: 'Certificate', 
-          labelPlural: 'Certificates',
-          plural: 'certificates',
-          apiVersion: `${CertificateModel.group}/${CertificateModel.version}`,
-          crd: true,
-          namespaced: true,
+      // Manual delete using fetch to bypass k8sDelete API path issues
+      const resourceName = deleteModal.certificate?.metadata?.name;
+      const resourceNamespace = deleteModal.certificate?.metadata?.namespace;
+      const apiPath = `/api/kubernetes/apis/cert-manager.io/v1/namespaces/${resourceNamespace}/certificates/${resourceName}`;
+      
+      console.log('Using manual API path:', apiPath);
+      
+      const response = await fetch(apiPath, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        resource: deleteModal.certificate,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+      }
       
       // Close modal on success
       setDeleteModal({
