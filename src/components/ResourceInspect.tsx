@@ -63,8 +63,9 @@ const ClusterSecretStoreModel = {
 export const ResourceInspect: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   
-  // State for revealing sensitive data
-  const [showSensitiveData, setShowSensitiveData] = React.useState(false);
+  // State for revealing sensitive data (separate for spec and status)
+  const [showSpecSensitiveData, setShowSpecSensitiveData] = React.useState(false);
+  const [showStatusSensitiveData, setShowStatusSensitiveData] = React.useState(false);
   
   // Parse URL manually since useParams() isn't working in plugin environment
   const pathname = window.location.pathname;
@@ -235,61 +236,58 @@ export const ResourceInspect: React.FC = () => {
     );
   };
 
-  // Function to mask sensitive data in JSON objects
-  const maskSensitiveData = (obj: any): any => {
-    if (showSensitiveData) {
-      return obj;
-    }
-    
+  // Function to check if object contains sensitive data
+  const containsSensitiveData = (obj: any): boolean => {
     const sensitiveKeys = [
       'password', 'secret', 'token', 'key', 'privateKey', 'secretKey',
       'accessKey', 'secretAccessKey', 'clientSecret', 'apiKey', 'auth',
       'authentication', 'credential', 'cert', 'certificate', 'tls'
     ];
     
-    const maskObject = (data: any): any => {
+    const checkObject = (data: any): boolean => {
       if (Array.isArray(data)) {
-        return data.map(maskObject);
+        return data.some(checkObject);
       }
       
       if (data && typeof data === 'object') {
-        const masked: any = {};
         for (const [key, value] of Object.entries(data)) {
           const lowerKey = key.toLowerCase();
           const isSensitive = sensitiveKeys.some(sensitiveKey => 
             lowerKey.includes(sensitiveKey.toLowerCase())
           );
           
-          if (isSensitive && typeof value === 'string') {
-            masked[key] = '***HIDDEN***';
-          } else {
-            masked[key] = maskObject(value);
+          if (isSensitive || checkObject(value)) {
+            return true;
           }
         }
-        return masked;
       }
       
-      return data;
+      return false;
     };
     
-    return maskObject(obj);
+    return checkObject(obj);
   };
 
   const renderSpecification = () => {
     if (!resource?.spec) return null;
+
+    const hasSensitiveData = containsSensitiveData(resource.spec);
+    const shouldHideContent = hasSensitiveData && !showSpecSensitiveData;
 
     return (
       <Card>
         <CardTitle>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {t('Specification')}
-            <Switch
-              id="spec-sensitive-toggle"
-              label={showSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
-              isChecked={showSensitiveData}
-              onChange={(event, checked) => setShowSensitiveData(checked)}
-              ouiaId="SpecificationSensitiveToggle"
-            />
+            {hasSensitiveData && (
+              <Switch
+                id="spec-sensitive-toggle"
+                label={showSpecSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
+                isChecked={!showSpecSensitiveData}
+                onChange={(event, checked) => setShowSpecSensitiveData(!checked)}
+                ouiaId="SpecificationSensitiveToggle"
+              />
+            )}
           </div>
         </CardTitle>
         <CardBody>
@@ -301,7 +299,7 @@ export const ResourceInspect: React.FC = () => {
             maxHeight: '400px',
             border: '1px solid #d2d2d2'
           }}>
-            {JSON.stringify(maskSensitiveData(resource.spec), null, 2)}
+            {shouldHideContent ? '...' : JSON.stringify(resource.spec, null, 2)}
           </pre>
         </CardBody>
       </Card>
@@ -311,18 +309,23 @@ export const ResourceInspect: React.FC = () => {
   const renderStatus = () => {
     if (!resource?.status) return null;
 
+    const hasSensitiveData = containsSensitiveData(resource.status);
+    const shouldHideContent = hasSensitiveData && !showStatusSensitiveData;
+
     return (
       <Card>
         <CardTitle>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {t('Status')}
-            <Switch
-              id="status-sensitive-toggle"
-              label={showSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
-              isChecked={showSensitiveData}
-              onChange={(event, checked) => setShowSensitiveData(checked)}
-              ouiaId="StatusSensitiveToggle"
-            />
+            {hasSensitiveData && (
+              <Switch
+                id="status-sensitive-toggle"
+                label={showStatusSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
+                isChecked={!showStatusSensitiveData}
+                onChange={(event, checked) => setShowStatusSensitiveData(!checked)}
+                ouiaId="StatusSensitiveToggle"
+              />
+            )}
           </div>
         </CardTitle>
         <CardBody>
@@ -334,7 +337,7 @@ export const ResourceInspect: React.FC = () => {
             maxHeight: '400px',
             border: '1px solid #d2d2d2'
           }}>
-            {JSON.stringify(maskSensitiveData(resource.status), null, 2)}
+            {shouldHideContent ? '...' : JSON.stringify(resource.status, null, 2)}
           </pre>
         </CardBody>
       </Card>
