@@ -1,11 +1,22 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
-
-import { Label } from '@patternfly/react-core';
-import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
+import { 
+  Label, 
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
+  MenuToggleElement,
+  Modal,
+  ModalVariant,
+  Button,
+  Alert,
+  AlertVariant,
+} from '@patternfly/react-core';
+import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 
 // SecretStore and ClusterSecretStore models from external-secrets-operator
 const SecretStoreModel = {
@@ -95,6 +106,102 @@ const getConditionStatus = (secretStore: SecretStore) => {
 
 export const SecretStoresTable: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
+  const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
+  
+  const toggleDropdown = (storeId: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [storeId]: !prev[storeId]
+    }));
+  };
+
+  const [deleteModal, setDeleteModal] = React.useState<{
+    isOpen: boolean;
+    secretStore: SecretStore | null;
+    isDeleting: boolean;
+    error: string | null;
+  }>({
+    isOpen: false,
+    secretStore: null,
+    isDeleting: false,
+    error: null,
+  });
+
+  const handleInspect = (secretStore: SecretStore) => {
+    const resourceType = secretStore.metadata.namespace ? 'secretstores' : 'clustersecretstores';
+    const name = secretStore.metadata.name;
+    if (secretStore.metadata.namespace) {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${secretStore.metadata.namespace}/${name}`;
+    } else {
+      window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
+    }
+  };
+
+  const handleDelete = (secretStore: SecretStore) => {
+    setDeleteModal({
+      isOpen: true,
+      secretStore,
+      isDeleting: false,
+      error: null,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.secretStore) return;
+    
+    setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    
+    try {
+      const isClusterScoped = !deleteModal.secretStore.metadata.namespace;
+      
+      // Manual delete using fetch to bypass k8sDelete API path issues
+      const resourceName = deleteModal.secretStore?.metadata?.name;
+      const resourceNamespace = deleteModal.secretStore?.metadata?.namespace;
+      
+      let apiPath: string;
+      if (isClusterScoped) {
+        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/clustersecretstores/${resourceName}`;
+      } else {
+        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/secretstores/${resourceName}`;
+      }
+      
+      const response = await consoleFetch(apiPath, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      
+      // Close modal on success
+      setDeleteModal({
+        isOpen: false,
+        secretStore: null,
+        isDeleting: false,
+        error: null,
+      });
+    } catch (error: any) {
+
+      setDeleteModal(prev => ({
+        ...prev,
+        isDeleting: false,
+        error: error.message || 'Failed to delete secret store',
+      }));
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      secretStore: null,
+      isDeleting: false,
+      error: null,
+    });
+  };
   
   // Watch both SecretStores and ClusterSecretStores
   const [secretStores, secretStoresLoaded, secretStoresError] = useK8sWatchResource<SecretStore[]>({
@@ -112,12 +219,13 @@ export const SecretStoresTable: React.FC = () => {
   const loadError = secretStoresError || clusterSecretStoresError;
 
   const columns = [
-    { title: t('Name'), width: 18 },
-    { title: t('Type'), width: 15 },
-    { title: t('Scope'), width: 10 },
-    { title: t('Provider'), width: 17 },
+    { title: t('Name'), width: 16 },
+    { title: t('Type'), width: 11 },
+    { title: t('Scope'), width: 9 },
+    { title: t('Provider'), width: 16 },
+    { title: t('Details'), width: 26 },
     { title: t('Status'), width: 12 },
-    { title: t('Details'), width: 28 },
+    { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -132,6 +240,7 @@ export const SecretStoresTable: React.FC = () => {
       const conditionStatus = getConditionStatus(secretStore);
       const providerType = getProviderType(secretStore);
       const providerDetails = getProviderDetails(secretStore);
+      const storeId = `${secretStore.metadata.namespace || 'cluster'}-${secretStore.metadata.name}`;
       
       return {
         cells: [
@@ -139,26 +248,99 @@ export const SecretStoresTable: React.FC = () => {
           secretStore.scope === 'Namespace' ? 'SecretStore' : 'ClusterSecretStore',
           secretStore.scope,
           providerType,
+          providerDetails,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
           ),
-          providerDetails,
+          (
+            <Dropdown
+              isOpen={openDropdowns[storeId] || false}
+              onSelect={() => setOpenDropdowns(prev => ({ ...prev, [storeId]: false }))}
+              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  aria-label="kebab dropdown toggle"
+                  variant="plain"
+                  onClick={() => toggleDropdown(storeId)}
+                  isExpanded={openDropdowns[storeId] || false}
+                >
+                  <EllipsisVIcon />
+                </MenuToggle>
+              )}
+              shouldFocusToggleOnSelect
+            >
+              <DropdownList>
+                <DropdownItem
+                  key="inspect"
+                  onClick={() => handleInspect(secretStore)}
+                >
+                  {t('Inspect')}
+                </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={() => handleDelete(secretStore)}
+                >
+                  {t('Delete')}
+                </DropdownItem>
+              </DropdownList>
+            </Dropdown>
+          ),
         ],
       };
     });
-  }, [secretStores, clusterSecretStores, loaded]);
+  }, [secretStores, clusterSecretStores, loaded, openDropdowns, t]);
 
   return (
-    <ResourceTable
-      columns={columns}
-      rows={rows}
-      loading={!loaded}
-      error={loadError?.message}
-      emptyStateTitle={t('No secret stores found')}
-      emptyStateBody={t('No external-secrets-operator SecretStores are currently available in the demo project or cluster.')}
-      data-test="secret-stores-table"
-    />
+    <>
+      <ResourceTable
+        columns={columns}
+        rows={rows}
+        loading={!loaded}
+        error={loadError?.message}
+        emptyStateTitle={t('No secret stores found')}
+        emptyStateBody={t('No external-secrets-operator SecretStores are currently available in the demo project or cluster.')}
+        data-test="secret-stores-table"
+      />
+      
+      <Modal
+        variant={ModalVariant.small}
+        title={`${t('Delete')} ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')}`}
+        isOpen={deleteModal.isOpen}
+        onClose={cancelDelete}
+      >
+        <div style={{ padding: '1.5rem' }}>
+          {deleteModal.error && (
+            <Alert variant={AlertVariant.danger} title={t('Delete failed')} isInline style={{ marginBottom: '1.5rem' }}>
+              {deleteModal.error}
+            </Alert>
+          )}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
+              {`Are you sure you want to delete the ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')} "${deleteModal.secretStore?.metadata?.name || ''}"?`}
+            </p>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
+              <strong>{t('This action cannot be undone.')}</strong>
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid #e1e5e9' }}>
+            <Button key="cancel" variant="link" onClick={cancelDelete}>
+              {t('Cancel')}
+            </Button>
+            <Button
+              key="confirm"
+              variant="danger"
+              onClick={confirmDelete}
+              isDisabled={deleteModal.isDeleting}
+              isLoading={deleteModal.isDeleting}
+              spinnerAriaValueText={deleteModal.isDeleting ? t('Deleting...') : undefined}
+            >
+              {deleteModal.isDeleting ? t('Deleting...') : t('Delete')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 };
