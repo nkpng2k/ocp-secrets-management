@@ -16,7 +16,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 
 // Certificate custom resource definition from cert-manager
 const CertificateModel = {
@@ -120,7 +120,7 @@ export const CertificatesTable: React.FC = () => {
       
       console.log('Using manual API path:', apiPath);
       
-      const response = await fetch(apiPath, {
+      const response = await consoleFetch(apiPath, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
