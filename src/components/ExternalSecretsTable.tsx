@@ -145,7 +145,11 @@ export const ExternalSecretsTable: React.FC = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Delete failed - Response:', response.status, response.statusText);
+        console.error('Delete failed - Body:', errorText);
+        console.error('Delete failed - Headers:', Object.fromEntries(response.headers.entries()));
+        throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
       // Close modal on success
