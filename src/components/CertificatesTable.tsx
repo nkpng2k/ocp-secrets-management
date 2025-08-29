@@ -111,14 +111,10 @@ export const CertificatesTable: React.FC = () => {
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
-      console.log('Deleting certificate:', deleteModal.certificate?.metadata?.name, 'in namespace:', deleteModal.certificate?.metadata?.namespace);
-      
       // Manual delete using fetch to bypass k8sDelete API path issues
       const resourceName = deleteModal.certificate?.metadata?.name;
       const resourceNamespace = deleteModal.certificate?.metadata?.namespace;
       const apiPath = `/api/kubernetes/apis/cert-manager.io/v1/namespaces/${resourceNamespace}/certificates/${resourceName}`;
-      
-      console.log('Using manual API path:', apiPath);
       
       const response = await consoleFetch(apiPath, {
         method: 'DELETE',
@@ -129,9 +125,6 @@ export const CertificatesTable: React.FC = () => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Delete failed - Response:', response.status, response.statusText);
-        console.error('Delete failed - Body:', errorText);
-        console.error('Delete failed - Headers:', Object.fromEntries(response.headers.entries()));
         throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
@@ -143,7 +136,7 @@ export const CertificatesTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
-      console.error('Delete error:', error);
+
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,

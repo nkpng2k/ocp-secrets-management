@@ -153,9 +153,6 @@ export const SecretStoresTable: React.FC = () => {
     
     try {
       const isClusterScoped = !deleteModal.secretStore.metadata.namespace;
-      const resourceType = isClusterScoped ? 'ClusterSecretStore' : 'SecretStore';
-      
-      console.log('Deleting secret store:', deleteModal.secretStore?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.secretStore?.metadata?.namespace);
       
       // Manual delete using fetch to bypass k8sDelete API path issues
       const resourceName = deleteModal.secretStore?.metadata?.name;
@@ -168,8 +165,6 @@ export const SecretStoresTable: React.FC = () => {
         apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/secretstores/${resourceName}`;
       }
       
-      console.log('Using manual API path:', apiPath);
-      
       const response = await consoleFetch(apiPath, {
         method: 'DELETE',
         headers: {
@@ -179,9 +174,6 @@ export const SecretStoresTable: React.FC = () => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Delete failed - Response:', response.status, response.statusText);
-        console.error('Delete failed - Body:', errorText);
-        console.error('Delete failed - Headers:', Object.fromEntries(response.headers.entries()));
         throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
@@ -193,7 +185,7 @@ export const SecretStoresTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
-      console.error('Delete secret store error:', error);
+
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,

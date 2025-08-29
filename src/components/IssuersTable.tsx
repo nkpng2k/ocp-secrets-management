@@ -132,9 +132,6 @@ export const IssuersTable: React.FC = () => {
     
     try {
       const isClusterScoped = !deleteModal.issuer.metadata.namespace;
-      const resourceType = isClusterScoped ? 'ClusterIssuer' : 'Issuer';
-      
-      console.log('Deleting issuer:', deleteModal.issuer?.metadata?.name, 'type:', resourceType, 'namespace:', deleteModal.issuer?.metadata?.namespace);
       
       // Manual delete using fetch to bypass k8sDelete API path issues
       const resourceName = deleteModal.issuer?.metadata?.name;
@@ -147,8 +144,6 @@ export const IssuersTable: React.FC = () => {
         apiPath = `/api/kubernetes/apis/cert-manager.io/v1/namespaces/${resourceNamespace}/issuers/${resourceName}`;
       }
       
-      console.log('Using manual API path:', apiPath);
-      
       const response = await consoleFetch(apiPath, {
         method: 'DELETE',
         headers: {
@@ -158,9 +153,6 @@ export const IssuersTable: React.FC = () => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Delete failed - Response:', response.status, response.statusText);
-        console.error('Delete failed - Body:', errorText);
-        console.error('Delete failed - Headers:', Object.fromEntries(response.headers.entries()));
         throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
@@ -172,7 +164,7 @@ export const IssuersTable: React.FC = () => {
         error: null,
       });
     } catch (error: any) {
-      console.error('Delete issuer error:', error);
+
       setDeleteModal(prev => ({
         ...prev,
         isDeleting: false,
