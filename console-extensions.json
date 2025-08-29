@@ -24,23 +24,5 @@
       "perspective": "admin",
       "section": "workloads"
     }
-  },
-  {
-    "type": "console.page/route",
-    "properties": {
-      "exact": true,
-      "path": "/example",
-      "component": { "$codeRef": "ExamplePage" }
-    }
-  },
-  {
-    "type": "console.navigation/href",
-    "properties": {
-      "id": "example",
-      "name": "%plugin__ocp-secrets-management~Plugin Example%",
-      "href": "/example",
-      "perspective": "admin",
-      "section": "home"
-    }
   }
 ]
