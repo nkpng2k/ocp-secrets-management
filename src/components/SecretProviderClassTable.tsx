@@ -25,6 +25,12 @@ const SecretProviderClassModel = {
   kind: 'SecretProviderClass',
 };
 
+const SecretProviderClassPodStatusModel = {
+  group: 'secrets-store.csi.x-k8s.io',
+  version: 'v1',
+  kind: 'SecretProviderClassPodStatus',
+};
+
 interface SecretProviderClass {
   metadata: {
     name: string;
@@ -59,6 +65,19 @@ interface SecretProviderClass {
   };
 }
 
+interface SecretProviderClassPodStatus {
+  metadata: {
+    name: string;
+    namespace: string;
+  };
+  status: {
+    mounted: boolean;
+    secretProviderClassName: string;
+    podName?: string;
+    targetPath?: string;
+  };
+}
+
 const getProviderIcon = (provider: string) => {
   switch (provider.toLowerCase()) {
     case 'azure':
@@ -76,24 +95,25 @@ const getProviderIcon = (provider: string) => {
   }
 };
 
-const getSecretProviderClassStatus = (spc: SecretProviderClass) => {
-  if (!spc.status?.podStatus) {
+const getSecretProviderClassStatus = (spc: SecretProviderClass, podStatuses: SecretProviderClassPodStatus[]) => {
+  // Find pod statuses for this SecretProviderClass
+  const relevantPodStatuses = podStatuses.filter(
+    podStatus => podStatus.status.secretProviderClassName === spc.metadata.name
+  );
+
+  if (relevantPodStatuses.length === 0) {
     return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'grey' };
   }
 
-  const podStatuses = Object.values(spc.status.podStatus);
-  const mountedPods = podStatuses.filter(pod => pod.mounted);
-  const errorPods = podStatuses.filter(pod => pod.error);
-
-  if (errorPods.length > 0) {
-    return { status: 'Error', icon: <TimesCircleIcon />, color: 'red' };
-  }
+  // Check if any pod has this SecretProviderClass mounted
+  const mountedPods = relevantPodStatuses.filter(podStatus => podStatus.status.mounted === true);
 
   if (mountedPods.length > 0) {
-    return { status: 'Mounted', icon: <CheckCircleIcon />, color: 'green' };
+    return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
   }
 
-  return { status: 'Not Mounted', icon: <ExclamationCircleIcon />, color: 'orange' };
+  // If there are pod statuses but none are mounted
+  return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
 };
 
 interface SecretProviderClassTableProps {
@@ -161,11 +181,20 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
     });
   };
 
-  const [secretProviderClasses, loaded, loadError] = useK8sWatchResource<SecretProviderClass[]>({
+  const [secretProviderClasses, spcLoaded, spcLoadError] = useK8sWatchResource<SecretProviderClass[]>({
     groupVersionKind: SecretProviderClassModel,
     namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
+
+  const [podStatuses, podStatusesLoaded, podStatusesLoadError] = useK8sWatchResource<SecretProviderClassPodStatus[]>({
+    groupVersionKind: SecretProviderClassPodStatusModel,
+    namespace: selectedProject === 'all' ? undefined : selectedProject,
+    isList: true,
+  });
+
+  const loaded = spcLoaded && podStatusesLoaded;
+  const loadError = spcLoadError || podStatusesLoadError;
 
   const columns = [
     { title: t('Name'), width: 16 },
@@ -178,11 +207,11 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
   ];
 
   const rows = React.useMemo(() => {
-    if (!loaded || !secretProviderClasses) return [];
+    if (!loaded || !secretProviderClasses || !podStatuses) return [];
 
     return secretProviderClasses.map((spc) => {
       const spcId = `${spc.metadata.namespace}-${spc.metadata.name}`;
-      const conditionStatus = getSecretProviderClassStatus(spc);
+      const conditionStatus = getSecretProviderClassStatus(spc, podStatuses);
       
       // Get secret objects count
       const secretObjectsCount = spc.spec.secretObjects?.length || 0;
@@ -252,7 +281,7 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
         ],
       };
     });
-  }, [secretProviderClasses, loaded, openDropdowns, t]);
+  }, [secretProviderClasses, podStatuses, loaded, openDropdowns, t]);
 
   return (
     <>
