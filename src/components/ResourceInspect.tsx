@@ -58,6 +58,12 @@ const ClusterSecretStoreModel = {
   kind: 'ClusterSecretStore',
 };
 
+const SecretProviderClassModel = {
+  group: 'secrets-store.csi.x-k8s.io',
+  version: 'v1',
+  kind: 'SecretProviderClass',
+};
+
 
 
 export const ResourceInspect: React.FC = () => {
@@ -109,6 +115,8 @@ export const ResourceInspect: React.FC = () => {
         return SecretStoreModel;
       case 'clustersecretstores':
         return ClusterSecretStoreModel;
+      case 'secretproviderclasses':
+        return SecretProviderClassModel;
       default:
         return null;
     }

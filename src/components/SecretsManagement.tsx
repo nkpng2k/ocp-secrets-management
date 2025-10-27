@@ -17,10 +17,11 @@ import { CertificatesTable } from './CertificatesTable';
 import { IssuersTable } from './IssuersTable';
 import { ExternalSecretsTable } from './ExternalSecretsTable';
 import { SecretStoresTable } from './SecretStoresTable';
+import { SecretProviderClassTable } from './SecretProviderClassTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
-type OperatorType = 'cert-manager' | 'external-secrets' | 'all';
-type ResourceKind = 'certificates' | 'issuers' | 'externalsecrets' | 'secretstores' | 'all';
+type OperatorType = 'cert-manager' | 'external-secrets' | 'secrets-store-csi' | 'all';
+type ResourceKind = 'certificates' | 'issuers' | 'externalsecrets' | 'secretstores' | 'secretproviderclasses' | 'all';
 type ProjectType = 'all' | string;
 
 // Project/Namespace resource model
@@ -65,6 +66,7 @@ export default function SecretsManagement() {
     { value: 'all', label: t('All Operators'), description: t('Show resources from all operators') },
     { value: 'cert-manager', label: 'cert-manager', description: t('Certificate lifecycle management') },
     { value: 'external-secrets', label: 'External Secrets Operator', description: t('External secret synchronization') },
+    { value: 'secrets-store-csi', label: 'Secrets Store CSI Driver', description: t('Secret provider integration') },
   ];
 
   // Generate dynamic project options from fetched namespaces
@@ -129,6 +131,7 @@ export default function SecretsManagement() {
         { value: 'issuers', label: t('Issuers'), description: t('cert-manager issuers') },
         { value: 'externalsecrets', label: t('External Secrets'), description: t('External secret definitions') },
         { value: 'secretstores', label: t('Secret Stores'), description: t('External secret stores') },
+        { value: 'secretproviderclasses', label: t('Secret Provider Classes'), description: t('CSI secret provider configurations') },
       ];
     } else if (operator === 'cert-manager') {
       return [
@@ -141,6 +144,11 @@ export default function SecretsManagement() {
         ...baseOptions,
         { value: 'externalsecrets', label: t('External Secrets'), description: t('Secret synchronization rules') },
         { value: 'secretstores', label: t('Secret Stores'), description: t('External secret backends') },
+      ];
+    } else if (operator === 'secrets-store-csi') {
+      return [
+        ...baseOptions,
+        { value: 'secretproviderclasses', label: t('Secret Provider Classes'), description: t('Secret provider configurations') },
       ];
     }
     return baseOptions;
@@ -257,7 +265,8 @@ export default function SecretsManagement() {
               <Badge isRead>
                 {filters.project === 'all' ? t('All Projects') : filters.project}
                 {` | ${filters.operator === 'all' ? t('All Operators') : 
-                 filters.operator === 'cert-manager' ? 'cert-manager' : 'External Secrets'}`}
+                 filters.operator === 'cert-manager' ? 'cert-manager' : 
+                 filters.operator === 'external-secrets' ? 'External Secrets' : 'Secrets Store CSI'}`}
                 {filters.resourceKind !== 'all' && ` → ${getResourceOptions(filters.operator).find(opt => opt.value === filters.resourceKind)?.label}`}
               </Badge>
             </FlexItem>
@@ -335,6 +344,25 @@ export default function SecretsManagement() {
                   </CardTitle>
                   <CardBody>
                     <SecretStoresTable selectedProject={filters.project} />
+                  </CardBody>
+                </Card>
+              </GridItem>
+            )}
+
+            {/* Secrets Store CSI Driver Resources */}
+            {shouldShowComponent('secrets-store-csi', 'secretproviderclasses') && (
+              <GridItem span={12}>
+                <Card>
+                  <CardTitle>
+                    <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                      <FlexItem>
+                        {t('Secret Provider Classes')}
+                        <Badge isRead style={{ marginLeft: '8px' }}>Secrets Store CSI Driver</Badge>
+                      </FlexItem>
+                    </Flex>
+                  </CardTitle>
+                  <CardBody>
+                    <SecretProviderClassTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>
