@@ -18,7 +18,7 @@ import {
   AlertVariant,
   Switch,
 } from '@patternfly/react-core';
-import { ArrowLeftIcon, KeyIcon } from '@patternfly/react-icons';
+import { ArrowLeftIcon, KeyIcon, CheckCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 // Resource models
@@ -64,13 +64,31 @@ const SecretProviderClassModel = {
   kind: 'SecretProviderClass',
 };
 
+const SecretProviderClassPodStatusModel = {
+  group: 'secrets-store.csi.x-k8s.io',
+  version: 'v1',
+  kind: 'SecretProviderClassPodStatus',
+};
+
 const PushSecretModel = {
   group: 'external-secrets.io',
   version: 'v1alpha1',
   kind: 'PushSecret',
 };
 
-
+interface SecretProviderClassPodStatus {
+  metadata: {
+    name: string;
+    namespace: string;
+    creationTimestamp: string;
+  };
+  status: {
+    mounted: boolean;
+    secretProviderClassName: string;
+    podName?: string;
+    targetPath?: string;
+  };
+}
 
 export const ResourceInspect: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
@@ -138,6 +156,13 @@ export const ResourceInspect: React.FC = () => {
     name: name,
     namespace: isClusterScoped ? undefined : (namespace || 'demo'),
     isList: false,
+  });
+
+  // Watch SecretProviderClassPodStatus resources when inspecting a SecretProviderClass
+  const [podStatuses, podStatusesLoaded, podStatusesError] = useK8sWatchResource<SecretProviderClassPodStatus[]>({
+    groupVersionKind: SecretProviderClassPodStatusModel,
+    namespace: resourceType === 'secretproviderclasses' ? (namespace || 'demo') : undefined,
+    isList: true,
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -364,6 +389,61 @@ export const ResourceInspect: React.FC = () => {
     );
   };
 
+  const renderSecretProviderClassPodStatuses = () => {
+    if (resourceType !== 'secretproviderclasses' || !resource) return null;
+
+    // Filter pod statuses that reference this SecretProviderClass
+    const relevantPodStatuses = (podStatuses || []).filter(
+      podStatus => podStatus.status.secretProviderClassName === resource.metadata.name
+    );
+
+    if (relevantPodStatuses.length === 0) {
+      return (
+        <Card>
+          <CardTitle>{t('Pod Statuses')}</CardTitle>
+          <CardBody>
+            <p>{t('No pods are currently using this SecretProviderClass.')}</p>
+          </CardBody>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardTitle>{t('Pod Statuses')} ({relevantPodStatuses.length})</CardTitle>
+        <CardBody>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="pf-c-table pf-m-compact pf-m-grid-md" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>{t('Pod Name')}</th>
+                  <th>{t('Mounted')}</th>
+                  <th>{t('Created')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {relevantPodStatuses.map((podStatus) => (
+                  <tr key={podStatus.metadata.name}>
+                    <td>{podStatus.status.podName || podStatus.metadata.name}</td>
+                    <td>
+                      <Label 
+                        color={podStatus.status.mounted ? 'green' : 'red'} 
+                        icon={podStatus.status.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
+                      >
+                        {podStatus.status.mounted ? t('Yes') : t('No')}
+                      </Label>
+                    </td>
+                    <td>{formatTimestamp(podStatus.metadata.creationTimestamp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  };
+
   const getResourceTypeDisplayName = () => {
     switch (resourceType) {
       case 'certificates':
@@ -393,7 +473,10 @@ export const ResourceInspect: React.FC = () => {
     );
   }
 
-  if (!loaded) {
+  // For SecretProviderClass, also wait for pod statuses to load
+  const allLoaded = resourceType === 'secretproviderclasses' ? loaded && podStatusesLoaded : loaded;
+  
+  if (!allLoaded) {
     return (
       <div className="co-m-loader co-an-fade-in-out">
         <div className="co-m-loader-dot__one"></div>
@@ -403,7 +486,10 @@ export const ResourceInspect: React.FC = () => {
     );
   }
 
-  if (loadError) {
+  // Handle errors from both resource and pod status loading
+  const anyError = loadError || (resourceType === 'secretproviderclasses' ? podStatusesError : null);
+  
+  if (anyError) {
     return (
       <div className="co-m-pane__body">
         <Alert 
@@ -411,7 +497,7 @@ export const ResourceInspect: React.FC = () => {
           title={t('Error loading resource')} 
           isInline
         >
-          {loadError.message}
+          {anyError.message}
         </Alert>
       </div>
     );
@@ -473,6 +559,11 @@ export const ResourceInspect: React.FC = () => {
           <GridItem span={6}>
             {renderStatus()}
           </GridItem>
+          {resourceType === 'secretproviderclasses' && (
+            <GridItem span={12}>
+              {renderSecretProviderClassPodStatuses()}
+            </GridItem>
+          )}
         </Grid>
       </div>
     </>
