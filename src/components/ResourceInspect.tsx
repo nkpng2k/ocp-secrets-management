@@ -249,7 +249,11 @@ export const ResourceInspect: React.FC = () => {
     const sensitiveKeys = [
       'password', 'secret', 'token', 'key', 'privateKey', 'secretKey',
       'accessKey', 'secretAccessKey', 'clientSecret', 'apiKey', 'auth',
-      'authentication', 'credential', 'cert', 'certificate', 'tls'
+      'authentication', 'credential', 'cert', 'certificate', 'tls',
+      // SecretProviderClass specific sensitive patterns
+      'tenantId', 'clientId', 'subscriptionId', 'resourceGroup', 'vaultName',
+      'keyVaultName', 'servicePrincipal', 'roleArn', 'region', 'vaultUrl',
+      'vaultAddress', 'vaultNamespace', 'vaultRole', 'vaultPath', 'parameters'
     ];
     
     const checkObject = (data: any): boolean => {
@@ -317,20 +321,23 @@ export const ResourceInspect: React.FC = () => {
   const renderStatus = () => {
     if (!resource?.status) return null;
 
-    const shouldHideContent = !showStatusSensitiveData;
+    const hasSensitiveData = containsSensitiveData(resource.status);
+    const shouldHideContent = hasSensitiveData && !showStatusSensitiveData;
 
     return (
       <Card>
         <CardTitle>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {t('Status')}
-            <Switch
-              id="status-sensitive-toggle"
-              label={showStatusSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
-              isChecked={!showStatusSensitiveData}
-              onChange={(event, checked) => setShowStatusSensitiveData(!checked)}
-              ouiaId="StatusSensitiveToggle"
-            />
+            {hasSensitiveData && (
+              <Switch
+                id="status-sensitive-toggle"
+                label={showStatusSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
+                isChecked={!showStatusSensitiveData}
+                onChange={(event, checked) => setShowStatusSensitiveData(!checked)}
+                ouiaId="StatusSensitiveToggle"
+              />
+            )}
           </div>
         </CardTitle>
         <CardBody>
