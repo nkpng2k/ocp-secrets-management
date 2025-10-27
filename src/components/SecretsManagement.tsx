@@ -17,11 +17,12 @@ import { CertificatesTable } from './CertificatesTable';
 import { IssuersTable } from './IssuersTable';
 import { ExternalSecretsTable } from './ExternalSecretsTable';
 import { SecretStoresTable } from './SecretStoresTable';
+import { PushSecretsTable } from './PushSecretsTable';
 import { SecretProviderClassTable } from './SecretProviderClassTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 type OperatorType = 'cert-manager' | 'external-secrets' | 'secrets-store-csi' | 'all';
-type ResourceKind = 'certificates' | 'issuers' | 'externalsecrets' | 'secretstores' | 'secretproviderclasses' | 'all';
+type ResourceKind = 'certificates' | 'issuers' | 'externalsecrets' | 'secretstores' | 'pushsecrets' | 'secretproviderclasses' | 'all';
 type ProjectType = 'all' | string;
 
 // Project/Namespace resource model
@@ -131,6 +132,7 @@ export default function SecretsManagement() {
         { value: 'issuers', label: t('Issuers'), description: t('cert-manager issuers') },
         { value: 'externalsecrets', label: t('External Secrets'), description: t('External secret definitions') },
         { value: 'secretstores', label: t('Secret Stores'), description: t('External secret stores') },
+        { value: 'pushsecrets', label: t('Push Secrets'), description: t('External secret push configurations') },
         { value: 'secretproviderclasses', label: t('Secret Provider Classes'), description: t('CSI secret provider configurations') },
       ];
     } else if (operator === 'cert-manager') {
@@ -144,6 +146,7 @@ export default function SecretsManagement() {
         ...baseOptions,
         { value: 'externalsecrets', label: t('External Secrets'), description: t('Secret synchronization rules') },
         { value: 'secretstores', label: t('Secret Stores'), description: t('External secret backends') },
+        { value: 'pushsecrets', label: t('Push Secrets'), description: t('Secret push configurations') },
       ];
     } else if (operator === 'secrets-store-csi') {
       return [
@@ -344,6 +347,24 @@ export default function SecretsManagement() {
                   </CardTitle>
                   <CardBody>
                     <SecretStoresTable selectedProject={filters.project} />
+                  </CardBody>
+                </Card>
+              </GridItem>
+            )}
+
+            {shouldShowComponent('external-secrets', 'pushsecrets') && (
+              <GridItem span={12}>
+                <Card>
+                  <CardTitle>
+                    <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                      <FlexItem>
+                        {t('Push Secrets')}
+                        <Badge isRead style={{ marginLeft: '8px' }}>External Secrets Operator</Badge>
+                      </FlexItem>
+                    </Flex>
+                  </CardTitle>
+                  <CardBody>
+                    <PushSecretsTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>

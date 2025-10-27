@@ -64,6 +64,12 @@ const SecretProviderClassModel = {
   kind: 'SecretProviderClass',
 };
 
+const PushSecretModel = {
+  group: 'external-secrets.io',
+  version: 'v1alpha1',
+  kind: 'PushSecret',
+};
+
 
 
 export const ResourceInspect: React.FC = () => {
@@ -115,6 +121,8 @@ export const ResourceInspect: React.FC = () => {
         return SecretStoreModel;
       case 'clustersecretstores':
         return ClusterSecretStoreModel;
+      case 'pushsecrets':
+        return PushSecretModel;
       case 'secretproviderclasses':
         return SecretProviderClassModel;
       default:
