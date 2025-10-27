@@ -172,9 +172,9 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
     { title: t('Namespace'), width: 12 },
     { title: t('Provider'), width: 12 },
     { title: t('Secret Objects'), width: 14 },
-    { title: t('Parameters'), width: 20 },
+    { title: t('Parameters'), width: 24 },
     { title: t('Status'), width: 12 },
-    { title: '', width: 14 }, // Actions column
+    { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -220,7 +220,7 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
               toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
                 <MenuToggle
                   ref={toggleRef}
-                  aria-label="Actions"
+                  aria-label="kebab dropdown toggle"
                   variant="plain"
                   onClick={() => toggleDropdown(spcId)}
                   isExpanded={openDropdowns[spcId] || false}
