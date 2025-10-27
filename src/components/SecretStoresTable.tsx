@@ -223,12 +223,13 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
   const loadError = secretStoresError || clusterSecretStoresError;
 
   const columns = [
-    { title: t('Name'), width: 16 },
-    { title: t('Type'), width: 11 },
-    { title: t('Scope'), width: 9 },
-    { title: t('Provider'), width: 16 },
-    { title: t('Details'), width: 26 },
-    { title: t('Status'), width: 12 },
+    { title: t('Name'), width: 14 },
+    { title: t('Namespace'), width: 12 },
+    { title: t('Type'), width: 10 },
+    { title: t('Scope'), width: 8 },
+    { title: t('Provider'), width: 14 },
+    { title: t('Details'), width: 22 },
+    { title: t('Status'), width: 10 },
     { title: '', width: 10 }, // Actions column
   ];
 
@@ -249,6 +250,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
       return {
         cells: [
           secretStore.metadata.name,
+          secretStore.metadata.namespace || 'Cluster',
           secretStore.scope === 'Namespace' ? 'SecretStore' : 'ClusterSecretStore',
           secretStore.scope,
           providerType,
