@@ -84,7 +84,11 @@ const getConditionStatus = (issuer: Issuer) => {
   return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
 };
 
-export const IssuersTable: React.FC = () => {
+interface IssuersTableProps {
+  selectedProject: string;
+}
+
+export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = React.useState<{
@@ -185,7 +189,7 @@ export const IssuersTable: React.FC = () => {
   // Watch both Issuers and ClusterIssuers
   const [issuers, issuersLoaded, issuersError] = useK8sWatchResource<Issuer[]>({
     groupVersionKind: IssuerModel,
-    namespace: 'demo', // Focus on demo project
+    namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 

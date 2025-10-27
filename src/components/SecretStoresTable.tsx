@@ -104,7 +104,11 @@ const getConditionStatus = (secretStore: SecretStore) => {
   return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
 };
 
-export const SecretStoresTable: React.FC = () => {
+interface SecretStoresTableProps {
+  selectedProject: string;
+}
+
+export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedProject }) => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   
@@ -206,7 +210,7 @@ export const SecretStoresTable: React.FC = () => {
   // Watch both SecretStores and ClusterSecretStores
   const [secretStores, secretStoresLoaded, secretStoresError] = useK8sWatchResource<SecretStore[]>({
     groupVersionKind: SecretStoreModel,
-    namespace: 'demo', // Focus on demo project
+    namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 

@@ -68,7 +68,11 @@ const getConditionStatus = (certificate: Certificate) => {
   return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
 };
 
-export const CertificatesTable: React.FC = () => {
+interface CertificatesTableProps {
+  selectedProject: string;
+}
+
+export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedProject }) => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = React.useState<{
@@ -156,7 +160,7 @@ export const CertificatesTable: React.FC = () => {
 
   const [certificates, loaded, loadError] = useK8sWatchResource<Certificate[]>({
     groupVersionKind: CertificateModel,
-    namespace: 'demo', // Focus on demo project as requested
+    namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 

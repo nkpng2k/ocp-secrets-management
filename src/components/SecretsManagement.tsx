@@ -279,7 +279,7 @@ export default function SecretsManagement() {
                     </Flex>
                   </CardTitle>
                   <CardBody>
-                    <CertificatesTable />
+                    <CertificatesTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>
@@ -297,7 +297,7 @@ export default function SecretsManagement() {
                     </Flex>
                   </CardTitle>
                   <CardBody>
-                    <IssuersTable />
+                    <IssuersTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>
@@ -316,7 +316,7 @@ export default function SecretsManagement() {
                     </Flex>
                   </CardTitle>
                   <CardBody>
-                    <ExternalSecretsTable />
+                    <ExternalSecretsTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>
@@ -334,7 +334,7 @@ export default function SecretsManagement() {
                     </Flex>
                   </CardTitle>
                   <CardBody>
-                    <SecretStoresTable />
+                    <SecretStoresTable selectedProject={filters.project} />
                   </CardBody>
                 </Card>
               </GridItem>

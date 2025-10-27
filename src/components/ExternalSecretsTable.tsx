@@ -85,7 +85,11 @@ const getConditionStatus = (externalSecret: ExternalSecret) => {
   return { status: 'Syncing', icon: <SyncAltIcon />, color: 'blue' };
 };
 
-export const ExternalSecretsTable: React.FC = () => {
+interface ExternalSecretsTableProps {
+  selectedProject: string;
+}
+
+export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ selectedProject }) => {
   const { t } = useTranslation('plugin__ocp-secrets-management');
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = React.useState<{
@@ -172,7 +176,7 @@ export const ExternalSecretsTable: React.FC = () => {
   
   const [externalSecrets, loaded, loadError] = useK8sWatchResource<ExternalSecret[]>({
     groupVersionKind: ExternalSecretModel,
-    namespace: 'demo', // Focus on demo project as requested
+    namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 
