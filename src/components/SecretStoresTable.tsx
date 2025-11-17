@@ -21,13 +21,13 @@ import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-pl
 // SecretStore and ClusterSecretStore models from external-secrets-operator
 const SecretStoreModel = {
   group: 'external-secrets.io',
-  version: 'v1beta1',
+  version: 'v1',
   kind: 'SecretStore',
 };
 
 const ClusterSecretStoreModel = {
   group: 'external-secrets.io',
-  version: 'v1beta1',
+  version: 'v1',
   kind: 'ClusterSecretStore',
 };
 

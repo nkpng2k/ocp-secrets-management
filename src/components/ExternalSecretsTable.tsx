@@ -21,8 +21,15 @@ import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-pl
 // ExternalSecret custom resource definition from external-secrets-operator
 const ExternalSecretModel = {
   group: 'external-secrets.io',
-  version: 'v1beta1',
+  version: 'v1',
   kind: 'ExternalSecret',
+};
+
+// ClusterExternalSecret custom resource definition from external-secrets-operator
+const ClusterExternalSecretModel = {
+  group: 'external-secrets.io',
+  version: 'v1',
+  kind: 'ClusterExternalSecret',
 };
 
 interface ExternalSecret {
@@ -61,7 +68,55 @@ interface ExternalSecret {
   };
 }
 
-const getConditionStatus = (externalSecret: ExternalSecret) => {
+interface ClusterExternalSecret {
+  metadata: {
+    name: string;
+    namespace?: string; // ClusterExternalSecret is cluster-scoped
+    creationTimestamp: string;
+  };
+  spec: {
+    externalSecretSpec: {
+      secretStoreRef?: {
+        name: string;
+        kind: string;
+      };
+      target?: {
+        name?: string;
+        creationPolicy?: string;
+      };
+      refreshInterval?: string;
+      data?: Array<{
+        secretKey: string;
+        remoteRef: {
+          key: string;
+          property?: string;
+        };
+      }>;
+    };
+    namespaceSelector?: {
+      matchLabels?: Record<string, string>;
+    };
+    refreshTime?: string;
+  };
+  status?: {
+    conditions?: Array<{
+      type: string;
+      status: string;
+      reason?: string;
+      message?: string;
+    }>;
+    provisionedNamespaces?: number;
+    failedNamespaces?: number;
+  };
+}
+
+type ExternalSecretResource = ExternalSecret | ClusterExternalSecret;
+
+const isClusterExternalSecret = (resource: ExternalSecretResource): resource is ClusterExternalSecret => {
+  return 'externalSecretSpec' in resource.spec;
+};
+
+const getConditionStatus = (externalSecret: ExternalSecretResource) => {
   const readyCondition = externalSecret.status?.conditions?.find(
     (condition) => condition.type === 'Ready'
   );
@@ -94,7 +149,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = React.useState<{
     isOpen: boolean;
-    externalSecret: ExternalSecret | null;
+    externalSecret: ExternalSecretResource | null;
     isDeleting: boolean;
     error: string | null;
   }>({
@@ -111,13 +166,15 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
     }));
   };
 
-  const handleInspect = (externalSecret: ExternalSecret) => {
-    const namespace = externalSecret.metadata.namespace || 'demo';
+  const handleInspect = (externalSecret: ExternalSecretResource) => {
+    const isCluster = isClusterExternalSecret(externalSecret);
+    const namespace = externalSecret.metadata.namespace || 'default';
     const name = externalSecret.metadata.name;
-    window.location.href = `/secrets-management/inspect/externalsecrets/${namespace}/${name}`;
+    const resourceType = isCluster ? 'clusterexternalsecrets' : 'externalsecrets';
+    window.location.href = `/secrets-management/inspect/${resourceType}/${namespace}/${name}`;
   };
 
-  const handleDelete = (externalSecret: ExternalSecret) => {
+  const handleDelete = (externalSecret: ExternalSecretResource) => {
     setDeleteModal({
       isOpen: true,
       externalSecret,
@@ -132,10 +189,14 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
-      // Manual delete using fetch to bypass k8sDelete API path issues
       const resourceName = deleteModal.externalSecret?.metadata?.name;
       const resourceNamespace = deleteModal.externalSecret?.metadata?.namespace;
-      const apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/externalsecrets/${resourceName}`;
+      const isCluster = isClusterExternalSecret(deleteModal.externalSecret);
+      
+      // Build API path based on resource type
+      const apiPath = isCluster
+        ? `/api/kubernetes/apis/external-secrets.io/v1/clusterexternalsecrets/${resourceName}`
+        : `/api/kubernetes/apis/external-secrets.io/v1/namespaces/${resourceNamespace}/externalsecrets/${resourceName}`;
       
       const response = await consoleFetch(apiPath, {
         method: 'DELETE',
@@ -174,36 +235,78 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
     });
   };
   
-  const [externalSecrets, loaded, loadError] = useK8sWatchResource<ExternalSecret[]>({
+  // Watch ExternalSecrets (namespaced)
+  const [externalSecrets, externalSecretsLoaded, externalSecretsError] = useK8sWatchResource<ExternalSecret[]>({
     groupVersionKind: ExternalSecretModel,
     namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 
+  // Watch ClusterExternalSecrets (cluster-scoped)
+  const [clusterExternalSecrets, clusterExternalSecretsLoaded, clusterExternalSecretsError] = useK8sWatchResource<ClusterExternalSecret[]>({
+    groupVersionKind: ClusterExternalSecretModel,
+    isList: true,
+  });
+
+  // Combine both resource types
+  const allSecrets = React.useMemo(() => {
+    const combined: ExternalSecretResource[] = [...(externalSecrets || [])];
+    if (clusterExternalSecrets) {
+      combined.push(...clusterExternalSecrets);
+    }
+    return combined;
+  }, [externalSecrets, clusterExternalSecrets]);
+
+  const loaded = externalSecretsLoaded && clusterExternalSecretsLoaded;
+  const loadError = externalSecretsError || clusterExternalSecretsError;
+
   const columns = [
-    { title: t('Name'), width: 16 },
+    { title: t('Name'), width: 15 },
+    { title: t('Type'), width: 9 },
     { title: t('Namespace'), width: 10 },
-    { title: t('Target Secret'), width: 16 },
-    { title: t('Secret Store'), width: 22 },
-    { title: t('Refresh Interval'), width: 14 },
-    { title: t('Status'), width: 12 },
+    { title: t('Target Secret'), width: 14 },
+    { title: t('Secret Store'), width: 20 },
+    { title: t('Refresh Interval'), width: 12 },
+    { title: t('Status'), width: 10 },
     { title: '', width: 10 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
-    if (!loaded || !externalSecrets) return [];
+    if (!loaded || !allSecrets) return [];
     
-    return externalSecrets.map((externalSecret) => {
-      const conditionStatus = getConditionStatus(externalSecret);
-      const refreshInterval = externalSecret.spec.refreshInterval || 'Not set';
-      const secretId = `${externalSecret.metadata.namespace}-${externalSecret.metadata.name}`;
+    return allSecrets.map((resource) => {
+      const isCluster = isClusterExternalSecret(resource);
+      const conditionStatus = getConditionStatus(resource);
+      
+      // Extract data based on resource type
+      let targetSecret = '';
+      let secretStore = '';
+      let refreshInterval = '';
+      
+      if (isCluster) {
+        const clusterSpec = resource.spec.externalSecretSpec;
+        targetSecret = clusterSpec.target?.name || 'N/A';
+        secretStore = clusterSpec.secretStoreRef 
+          ? `${clusterSpec.secretStoreRef.name} (${clusterSpec.secretStoreRef.kind})`
+          : 'N/A';
+        refreshInterval = clusterSpec.refreshInterval || 'Not set';
+      } else {
+        targetSecret = resource.spec.target.name;
+        secretStore = `${resource.spec.secretStoreRef.name} (${resource.spec.secretStoreRef.kind})`;
+        refreshInterval = resource.spec.refreshInterval || 'Not set';
+      }
+      
+      const secretId = `${isCluster ? 'cluster' : resource.metadata.namespace}-${resource.metadata.name}`;
+      const resourceType = isCluster ? 'Cluster' : 'Namespaced';
+      const namespace = isCluster ? 'Cluster-wide' : resource.metadata.namespace;
       
       return {
         cells: [
-          externalSecret.metadata.name,
-          externalSecret.metadata.namespace,
-          externalSecret.spec.target.name,
-          `${externalSecret.spec.secretStoreRef.name} (${externalSecret.spec.secretStoreRef.kind})`,
+          resource.metadata.name,
+          resourceType,
+          namespace,
+          targetSecret,
+          secretStore,
           refreshInterval,
           (
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
@@ -230,13 +333,13 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
               <DropdownList>
                 <DropdownItem
                   key="inspect"
-                  onClick={() => handleInspect(externalSecret)}
+                  onClick={() => handleInspect(resource)}
                 >
                   {t('Inspect')}
                 </DropdownItem>
                 <DropdownItem
                   key="delete"
-                  onClick={() => handleDelete(externalSecret)}
+                  onClick={() => handleDelete(resource)}
                 >
                   {t('Delete')}
                 </DropdownItem>
@@ -246,7 +349,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
         ],
       };
     });
-  }, [externalSecrets, loaded, openDropdowns, t]);
+  }, [allSecrets, loaded, openDropdowns, t]);
 
   return (
     <>
