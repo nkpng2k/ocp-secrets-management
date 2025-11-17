@@ -39,12 +39,12 @@ interface ExternalSecret {
     creationTimestamp: string;
   };
   spec: {
-    secretStoreRef: {
+    secretStoreRef?: {
       name: string;
       kind: string;
     };
-    target: {
-      name: string;
+    target?: {
+      name?: string;
       creationPolicy?: string;
     };
     refreshInterval?: string;
@@ -285,14 +285,16 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
       
       if (isCluster) {
         const clusterSpec = resource.spec.externalSecretSpec;
-        targetSecret = clusterSpec.target?.name || 'N/A';
-        secretStore = clusterSpec.secretStoreRef 
+        targetSecret = clusterSpec?.target?.name || 'N/A';
+        secretStore = clusterSpec?.secretStoreRef 
           ? `${clusterSpec.secretStoreRef.name} (${clusterSpec.secretStoreRef.kind})`
           : 'N/A';
-        refreshInterval = clusterSpec.refreshInterval || 'Not set';
+        refreshInterval = clusterSpec?.refreshInterval || 'Not set';
       } else {
-        targetSecret = resource.spec.target.name;
-        secretStore = `${resource.spec.secretStoreRef.name} (${resource.spec.secretStoreRef.kind})`;
+        targetSecret = resource.spec.target?.name || 'N/A';
+        secretStore = resource.spec.secretStoreRef 
+          ? `${resource.spec.secretStoreRef.name} (${resource.spec.secretStoreRef.kind})`
+          : 'N/A';
         refreshInterval = resource.spec.refreshInterval || 'Not set';
       }
       
@@ -365,7 +367,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
       
       <Modal
         variant={ModalVariant.small}
-        title={`${t('Delete')} ${t('ExternalSecret')}`}
+        title={t('Delete') + ' ' + (deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? 'ClusterExternalSecret' : t('ExternalSecret'))}
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
@@ -377,7 +379,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              {`Are you sure you want to delete the ${t('ExternalSecret')} "${deleteModal.externalSecret?.metadata?.name || ''}"?`}
+              Are you sure you want to delete the {deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? 'ClusterExternalSecret' : t('ExternalSecret')} &quot;{deleteModal.externalSecret?.metadata?.name || ''}&quot;?
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>
