@@ -17,66 +17,12 @@ import {
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
-
-// SecretProviderClass custom resource definition from secrets-store-csi-driver
-const SecretProviderClassModel = {
-  group: 'secrets-store.csi.x-k8s.io',
-  version: 'v1',
-  kind: 'SecretProviderClass',
-};
-
-const SecretProviderClassPodStatusModel = {
-  group: 'secrets-store.csi.x-k8s.io',
-  version: 'v1',
-  kind: 'SecretProviderClassPodStatus',
-};
-
-interface SecretProviderClass {
-  metadata: {
-    name: string;
-    namespace: string;
-    creationTimestamp: string;
-    labels?: Record<string, string>;
-    annotations?: Record<string, string>;
-  };
-  spec: {
-    provider: string;
-    parameters?: Record<string, string>;
-    secretObjects?: Array<{
-      secretName: string;
-      type: string;
-      data: Array<{
-        objectName: string;
-        key: string;
-      }>;
-    }>;
-  };
-  status?: {
-    podStatus?: {
-      [podName: string]: {
-        mounted: boolean;
-        error?: string;
-      };
-    };
-    byPod?: Array<{
-      id: string;
-      namespace: string;
-    }>;
-  };
-}
-
-interface SecretProviderClassPodStatus {
-  metadata: {
-    name: string;
-    namespace: string;
-  };
-  status: {
-    mounted: boolean;
-    secretProviderClassName: string;
-    podName?: string;
-    targetPath?: string;
-  };
-}
+import { 
+  SecretProviderClassModel, 
+  SecretProviderClassPodStatusModel, 
+  SecretProviderClass, 
+  SecretProviderClassPodStatus 
+} from './crds/SecretProviderClass';
 
 const getProviderIcon = (provider: string) => {
   switch (provider.toLowerCase()) {

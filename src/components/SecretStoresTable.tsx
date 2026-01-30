@@ -17,49 +17,7 @@ import {
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
-
-// SecretStore and ClusterSecretStore models from external-secrets-operator
-const SecretStoreModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'SecretStore',
-};
-
-const ClusterSecretStoreModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'ClusterSecretStore',
-};
-
-interface SecretStore {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp: string;
-  };
-  scope?: 'Namespace' | 'Cluster';
-  spec: {
-    provider: {
-      aws?: { service: string; region?: string };
-      azurekv?: { vaultUrl: string };
-      gcpsm?: { projectId: string };
-      vault?: { server: string };
-      kubernetes?: { server?: string };
-      doppler?: { apiUrl?: string };
-      onepassword?: { connectHost: string };
-      gitlab?: { url?: string };
-      fake?: { data: any[] };
-    };
-  };
-  status?: {
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-    }>;
-  };
-}
+import { SecretStoreModel, ClusterSecretStoreModel, SecretStore } from './crds/SecretStore';
 
 const getProviderType = (secretStore: SecretStore): string => {
   const provider = secretStore.spec.provider;

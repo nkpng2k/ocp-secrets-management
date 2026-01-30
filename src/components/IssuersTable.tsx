@@ -17,48 +17,7 @@ import {
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
-
-// Issuer and ClusterIssuer models from cert-manager
-const IssuerModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'Issuer',
-};
-
-const ClusterIssuerModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'ClusterIssuer',
-};
-
-interface Issuer {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp: string;
-  };
-  spec: {
-    acme?: {
-      server: string;
-      email?: string;
-    };
-    ca?: {
-      secretName: string;
-    };
-    selfSigned?: {};
-    vault?: {
-      server: string;
-    };
-  };
-  status?: {
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-    }>;
-  };
-}
+import { IssuerModel, ClusterIssuerModel, Issuer } from './crds/Issuer';
 
 const getIssuerType = (issuer: Issuer): string => {
   if (issuer.spec.acme) return 'ACME';

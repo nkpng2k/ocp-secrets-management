@@ -20,87 +20,12 @@ import {
 } from '@patternfly/react-core';
 import { ArrowLeftIcon, KeyIcon, CheckCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
-
-// Resource models
-const CertificateModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'Certificate',
-};
-
-const IssuerModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'Issuer',
-};
-
-const ClusterIssuerModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'ClusterIssuer',
-};
-
-const ExternalSecretModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'ExternalSecret',
-};
-
-const ClusterExternalSecretModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'ClusterExternalSecret',
-};
-
-const SecretStoreModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'SecretStore',
-};
-
-const ClusterSecretStoreModel = {
-  group: 'external-secrets.io',
-  version: 'v1',
-  kind: 'ClusterSecretStore',
-};
-
-const SecretProviderClassModel = {
-  group: 'secrets-store.csi.x-k8s.io',
-  version: 'v1',
-  kind: 'SecretProviderClass',
-};
-
-const SecretProviderClassPodStatusModel = {
-  group: 'secrets-store.csi.x-k8s.io',
-  version: 'v1',
-  kind: 'SecretProviderClassPodStatus',
-};
-
-const PushSecretModel = {
-  group: 'external-secrets.io',
-  version: 'v1alpha1',
-  kind: 'PushSecret',
-};
-
-const ClusterPushSecretModel = {
-  group: 'external-secrets.io',
-  version: 'v1alpha1',
-  kind: 'ClusterPushSecret',
-};
-
-interface SecretProviderClassPodStatus {
-  metadata: {
-    name: string;
-    namespace: string;
-    creationTimestamp: string;
-  };
-  status: {
-    mounted: boolean;
-    secretProviderClassName: string;
-    podName?: string;
-    targetPath?: string;
-  };
-}
+import { CertificateModel } from './components/crds/Certificate';
+import { IssuerModel, ClusterIssuerModel } from './components/crds/Issuer';
+import { ExternalSecretModel, ClusterExternalSecretModel } from './components/crds/ExternalSecret';
+import { SecretStoreModel, ClusterSecretStoreModel } from './components/crds/SecretStore';
+import { PushSecretModel, ClusterPushSecretModel } from './components/crds/PushSecret';
+import { SecretProviderClassModel, SecretProviderClassPodStatusModel, SecretProviderClassPodStatus } from './components/crds/SecretProviderClass';
 
 export const ResourceInspect: React.FC = () => {
   const { t } = useTranslation('plugin__ocp-secrets-management');

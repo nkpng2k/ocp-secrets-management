@@ -17,40 +17,7 @@ import {
 import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon, EllipsisVIcon } from '@patternfly/react-icons';
 import { ResourceTable } from './ResourceTable';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
-
-// Certificate custom resource definition from cert-manager
-const CertificateModel = {
-  group: 'cert-manager.io',
-  version: 'v1',
-  kind: 'Certificate',
-};
-
-interface Certificate {
-  metadata: {
-    name: string;
-    namespace: string;
-    creationTimestamp: string;
-  };
-  spec: {
-    secretName: string;
-    issuerRef: {
-      name: string;
-      kind: string;
-    };
-    dnsNames?: string[];
-    commonName?: string;
-  };
-  status?: {
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-    }>;
-    renewalTime?: string;
-    notAfter?: string;
-  };
-}
+import { CertificateModel, Certificate } from './crds/Certificate';
 
 const getConditionStatus = (certificate: Certificate) => {
   const readyCondition = certificate.status?.conditions?.find(
