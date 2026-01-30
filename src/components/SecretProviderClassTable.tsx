@@ -214,13 +214,13 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
       const conditionStatus = getSecretProviderClassStatus(spc, podStatuses);
       
       // Get secret objects count
-      const secretObjectsCount = spc.spec.secretObjects?.length || 0;
+      const secretObjectsCount = spc.spec?.secretObjects?.length || 0;
       const secretObjectsText = secretObjectsCount > 0 
         ? `${secretObjectsCount} secret${secretObjectsCount > 1 ? 's' : ''}`
         : 'None';
 
       // Get key parameters for display
-      const parameters = spc.spec.parameters || {};
+      const parameters = spc.spec?.parameters || {};
       const parameterKeys = Object.keys(parameters);
       const parametersText = parameterKeys.length > 0 
         ? `${parameterKeys.length} parameter${parameterKeys.length > 1 ? 's' : ''}`
@@ -232,7 +232,7 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
           spc.metadata.namespace,
           (
             <span>
-              {getProviderIcon(spc.spec.provider)} {spc.spec.provider}
+              {getProviderIcon(spc.spec?.provider || '')} {spc.spec?.provider || 'Unknown'}
             </span>
           ),
           secretObjectsText,
