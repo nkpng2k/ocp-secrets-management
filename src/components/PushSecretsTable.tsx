@@ -366,10 +366,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              {t('Are you sure you want to delete the {resourceType} "{name}"?', {
-                resourceType: deleteModal.pushSecret && isClusterPushSecret(deleteModal.pushSecret) ? 'ClusterPushSecret' : 'PushSecret',
-                name: deleteModal.pushSecret?.metadata.name,
-              })}
+              {`Are you sure you want to delete the ${deleteModal.pushSecret && isClusterPushSecret(deleteModal.pushSecret) ? t('ClusterPushSecret') : t('PushSecret')} "${deleteModal.pushSecret?.metadata?.name || ''}"?`}
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>

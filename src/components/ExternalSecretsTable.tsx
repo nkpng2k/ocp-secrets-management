@@ -372,7 +372,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
       
       <Modal
         variant={ModalVariant.small}
-        title={t('Delete') + ' ' + (deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? 'ClusterExternalSecret' : t('ExternalSecret'))}
+        title={`${t('Delete')} ${deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? t('ClusterExternalSecret') : t('ExternalSecret')}`}
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
@@ -384,7 +384,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              Are you sure you want to delete the {deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? 'ClusterExternalSecret' : t('ExternalSecret')} &quot;{deleteModal.externalSecret?.metadata?.name || ''}&quot;?
+              {`Are you sure you want to delete the ${deleteModal.externalSecret && isClusterExternalSecret(deleteModal.externalSecret) ? t('ClusterExternalSecret') : t('ExternalSecret')} "${deleteModal.externalSecret?.metadata?.name || ''}"?`}
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>

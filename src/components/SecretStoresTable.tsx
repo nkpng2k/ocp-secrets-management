@@ -37,6 +37,7 @@ interface SecretStore {
     namespace?: string;
     creationTimestamp: string;
   };
+  scope?: 'Namespace' | 'Cluster';
   spec: {
     provider: {
       aws?: { service: string; region?: string };
@@ -156,17 +157,23 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
-      const isClusterScoped = !deleteModal.secretStore.metadata.namespace;
+      // Use scope property if available, otherwise check metadata.namespace
+      const isClusterScoped = deleteModal.secretStore.scope === 'Cluster' || !deleteModal.secretStore.metadata.namespace;
       
       // Manual delete using fetch to bypass k8sDelete API path issues
       const resourceName = deleteModal.secretStore?.metadata?.name;
       const resourceNamespace = deleteModal.secretStore?.metadata?.namespace;
       
       let apiPath: string;
+      // Use the same API version as the model (v1)
+      // Note: Kubernetes API resource names are lowercase and plural
       if (isClusterScoped) {
-        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/clustersecretstores/${resourceName}`;
+        apiPath = `/api/kubernetes/apis/${ClusterSecretStoreModel.group}/${ClusterSecretStoreModel.version}/clustersecretstores/${resourceName}`;
       } else {
-        apiPath = `/api/kubernetes/apis/external-secrets.io/v1beta1/namespaces/${resourceNamespace}/secretstores/${resourceName}`;
+        if (!resourceNamespace) {
+          throw new Error('Namespace is required for namespaced SecretStore');
+        }
+        apiPath = `/api/kubernetes/apis/${SecretStoreModel.group}/${SecretStoreModel.version}/namespaces/${resourceNamespace}/secretstores/${resourceName}`;
       }
       
       const response = await consoleFetch(apiPath, {
@@ -237,8 +244,8 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
     if (!loaded) return [];
     
     const allSecretStores = [
-      ...(secretStores || []).map(store => ({ ...store, scope: 'Namespace' })),
-      ...(clusterSecretStores || []).map(store => ({ ...store, scope: 'Cluster' })),
+      ...(secretStores || []).map(store => ({ ...store, scope: 'Namespace' as const })),
+      ...(clusterSecretStores || []).map(store => ({ ...store, scope: 'Cluster' as const })),
     ];
     
     return allSecretStores.map((secretStore) => {
@@ -312,7 +319,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
       
       <Modal
         variant={ModalVariant.small}
-        title={`${t('Delete')} ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')}`}
+        title={`${t('Delete')} ${deleteModal.secretStore?.scope === 'Cluster' ? t('ClusterSecretStore') : t('SecretStore')}`}
         isOpen={deleteModal.isOpen}
         onClose={cancelDelete}
       >
@@ -324,7 +331,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
           )}
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
-              {`Are you sure you want to delete the ${deleteModal.secretStore?.metadata?.namespace ? t('SecretStore') : t('ClusterSecretStore')} "${deleteModal.secretStore?.metadata?.name || ''}"?`}
+              {`Are you sure you want to delete the ${deleteModal.secretStore?.scope === 'Cluster' ? t('ClusterSecretStore') : t('SecretStore')} "${deleteModal.secretStore?.metadata?.name || ''}"?`}
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#6a737d' }}>
               <strong>{t('This action cannot be undone.')}</strong>
