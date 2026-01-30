@@ -168,10 +168,15 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
 
   const handleInspect = (externalSecret: ExternalSecretResource) => {
     const isCluster = isClusterExternalSecret(externalSecret);
-    const namespace = externalSecret.metadata.namespace || 'default';
     const name = externalSecret.metadata.name;
     const resourceType = isCluster ? 'clusterexternalsecrets' : 'externalsecrets';
-    window.location.href = `/secrets-management/inspect/${resourceType}/${namespace}/${name}`;
+    if (isCluster) {
+      // Cluster-scoped resources don't have a namespace
+      window.location.href = `/secrets-management/inspect/${resourceType}/${name}`;
+    } else {
+      const namespace = externalSecret.metadata.namespace || 'default';
+      window.location.href = `/secrets-management/inspect/${resourceType}/${namespace}/${name}`;
+    }
   };
 
   const handleDelete = (externalSecret: ExternalSecretResource) => {
