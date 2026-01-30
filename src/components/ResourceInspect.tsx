@@ -82,6 +82,12 @@ const PushSecretModel = {
   kind: 'PushSecret',
 };
 
+const ClusterPushSecretModel = {
+  group: 'external-secrets.io',
+  version: 'v1alpha1',
+  kind: 'ClusterPushSecret',
+};
+
 interface SecretProviderClassPodStatus {
   metadata: {
     name: string;
@@ -149,6 +155,8 @@ export const ResourceInspect: React.FC = () => {
         return ClusterSecretStoreModel;
       case 'pushsecrets':
         return PushSecretModel;
+      case 'clusterpushsecrets':
+        return ClusterPushSecretModel;
       case 'secretproviderclasses':
         return SecretProviderClassModel;
       default:
@@ -157,7 +165,7 @@ export const ResourceInspect: React.FC = () => {
   };
 
   const model = getResourceModel();
-  const isClusterScoped = resourceType === 'clusterissuers' || resourceType === 'clustersecretstores' || resourceType === 'clusterexternalsecrets';
+  const isClusterScoped = resourceType === 'clusterissuers' || resourceType === 'clustersecretstores' || resourceType === 'clusterexternalsecrets' || resourceType === 'clusterpushsecrets';
 
   const [resource, loaded, loadError] = useK8sWatchResource<any>({
     groupVersionKind: model,
@@ -468,6 +476,10 @@ export const ResourceInspect: React.FC = () => {
         return t('SecretStore');
       case 'clustersecretstores':
         return t('ClusterSecretStore');
+      case 'pushsecrets':
+        return t('PushSecret');
+      case 'clusterpushsecrets':
+        return t('ClusterPushSecret');
       default:
         return t('Resource');
     }

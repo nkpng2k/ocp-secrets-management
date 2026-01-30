@@ -25,6 +25,13 @@ const PushSecretModel = {
   kind: 'PushSecret',
 };
 
+// ClusterPushSecret model from external-secrets-operator
+const ClusterPushSecretModel = {
+  group: 'external-secrets.io',
+  version: 'v1alpha1',
+  kind: 'ClusterPushSecret',
+};
+
 interface PushSecret {
   metadata: {
     name: string;
@@ -67,7 +74,58 @@ interface PushSecret {
   };
 }
 
-const getPushSecretStatus = (pushSecret: PushSecret) => {
+interface ClusterPushSecret {
+  metadata: {
+    name: string;
+    namespace?: string; // ClusterPushSecret is cluster-scoped
+    creationTimestamp: string;
+    labels?: Record<string, string>;
+    annotations?: Record<string, string>;
+  };
+  spec: {
+    refreshInterval?: string;
+    secretStoreRefs: Array<{
+      name: string;
+      kind: string;
+    }>;
+    selector: {
+      secret: {
+        name: string;
+      };
+    };
+    namespaceSelector?: {
+      matchLabels?: Record<string, string>;
+    };
+    data?: Array<{
+      match: {
+        secretKey: string;
+        remoteRef: {
+          remoteKey: string;
+          property?: string;
+        };
+      };
+    }>;
+  };
+  status?: {
+    conditions?: Array<{
+      type: string;
+      status: string;
+      reason?: string;
+      message?: string;
+      lastTransitionTime?: string;
+    }>;
+    refreshTime?: string;
+    syncedResourceVersion?: string;
+  };
+}
+
+type PushSecretResource = PushSecret | ClusterPushSecret;
+
+const isClusterPushSecret = (resource: PushSecretResource): resource is ClusterPushSecret => {
+  return !resource.metadata.namespace;
+}
+
+const getPushSecretStatus = (pushSecret: PushSecretResource) => {
   if (!pushSecret.status?.conditions) {
     return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'grey' };
   }
@@ -96,7 +154,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
   const [openDropdowns, setOpenDropdowns] = React.useState<Record<string, boolean>>({});
   const [deleteModal, setDeleteModal] = React.useState<{
     isOpen: boolean;
-    pushSecret: PushSecret | null;
+    pushSecret: PushSecretResource | null;
     isDeleting: boolean;
     error: string | null;
   }>({
@@ -113,11 +171,18 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
     }));
   };
 
-  const handleDelete = async (pushSecret: PushSecret) => {
+  const handleDelete = async (pushSecret: PushSecretResource) => {
     setDeleteModal(prev => ({ ...prev, isDeleting: true, error: null }));
     
     try {
-      const url = `/api/kubernetes/apis/${PushSecretModel.group}/${PushSecretModel.version}/namespaces/${pushSecret.metadata.namespace}/pushsecrets/${pushSecret.metadata.name}`;
+      const isCluster = isClusterPushSecret(pushSecret);
+      let url: string;
+      
+      if (isCluster) {
+        url = `/api/kubernetes/apis/${ClusterPushSecretModel.group}/${ClusterPushSecretModel.version}/clusterpushsecrets/${pushSecret.metadata.name}`;
+      } else {
+        url = `/api/kubernetes/apis/${PushSecretModel.group}/${PushSecretModel.version}/namespaces/${pushSecret.metadata.namespace}/pushsecrets/${pushSecret.metadata.name}`;
+      }
       
       await consoleFetch(url, { method: 'DELETE' });
       setDeleteModal({
@@ -135,7 +200,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
     }
   };
 
-  const openDeleteModal = (pushSecret: PushSecret) => {
+  const openDeleteModal = (pushSecret: PushSecretResource) => {
     setDeleteModal({
       isOpen: true,
       pushSecret,
@@ -153,46 +218,66 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
     });
   };
 
-  // Watch PushSecrets
-  const [pushSecrets, loaded, loadError] = useK8sWatchResource<PushSecret[]>({
+  // Watch PushSecrets (namespaced)
+  const [pushSecrets, pushSecretsLoaded, pushSecretsError] = useK8sWatchResource<PushSecret[]>({
     groupVersionKind: PushSecretModel,
     namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
 
+  // Watch ClusterPushSecrets (cluster-scoped)
+  const [clusterPushSecrets, clusterPushSecretsLoaded, clusterPushSecretsError] = useK8sWatchResource<ClusterPushSecret[]>({
+    groupVersionKind: ClusterPushSecretModel,
+    isList: true,
+  });
+
+  const loaded = pushSecretsLoaded && clusterPushSecretsLoaded;
+  const loadError = pushSecretsError || clusterPushSecretsError;
+
   const columns = [
-    { title: t('Name'), width: 18 },
-    { title: t('Namespace'), width: 14 },
+    { title: t('Name'), width: 16 },
+    { title: t('Type'), width: 10 },
+    { title: t('Namespace'), width: 12 },
     { title: t('Secret Store'), width: 18 },
-    { title: t('Source Secret'), width: 18 },
+    { title: t('Source Secret'), width: 16 },
     { title: t('Refresh Interval'), width: 12 },
     { title: t('Status'), width: 10 },
-    { title: '', width: 10 }, // Actions column
+    { title: '', width: 6 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
-    if (!loaded || !pushSecrets) return [];
+    if (!loaded) return [];
 
-    return pushSecrets.map((pushSecret) => {
-      const pushSecretId = `${pushSecret.metadata.namespace}-${pushSecret.metadata.name}`;
+    const allPushSecrets: PushSecretResource[] = [
+      ...(pushSecrets || []),
+      ...(clusterPushSecrets || []),
+    ];
+
+    return allPushSecrets.map((pushSecret) => {
+      const isCluster = isClusterPushSecret(pushSecret);
+      const pushSecretId = `${isCluster ? 'cluster' : pushSecret.metadata.namespace}-${pushSecret.metadata.name}`;
       const conditionStatus = getPushSecretStatus(pushSecret);
       
       // Get secret store references
-      const secretStoreRefs = pushSecret.spec.secretStoreRefs || [];
+      const secretStoreRefs = pushSecret.spec?.secretStoreRefs || [];
       const secretStoreText = secretStoreRefs.length > 0 
         ? secretStoreRefs.map(ref => `${ref.name} (${ref.kind})`).join(', ')
         : 'None';
 
       // Get source secret name
-      const sourceSecret = pushSecret.spec.selector?.secret?.name || 'Unknown';
+      const sourceSecret = pushSecret.spec?.selector?.secret?.name || 'Unknown';
 
       // Get refresh interval
-      const refreshInterval = pushSecret.spec.refreshInterval || 'Default';
+      const refreshInterval = pushSecret.spec?.refreshInterval || 'Default';
+
+      const resourceType = isCluster ? 'ClusterPushSecret' : 'PushSecret';
+      const namespace = isCluster ? 'Cluster-wide' : pushSecret.metadata.namespace;
 
       return {
         cells: [
           pushSecret.metadata.name,
-          pushSecret.metadata.namespace,
+          resourceType,
+          namespace,
           secretStoreText,
           sourceSecret,
           refreshInterval,
@@ -222,8 +307,12 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
                 <DropdownItem
                   key="inspect"
                   onClick={() => {
-                    const url = `/secrets-management/inspect/pushsecrets/${pushSecret.metadata.namespace}/${pushSecret.metadata.name}`;
-                    window.location.href = url;
+                    const resourceType = isCluster ? 'clusterpushsecrets' : 'pushsecrets';
+                    if (isCluster) {
+                      window.location.href = `/secrets-management/inspect/${resourceType}/${pushSecret.metadata.name}`;
+                    } else {
+                      window.location.href = `/secrets-management/inspect/${resourceType}/${pushSecret.metadata.namespace}/${pushSecret.metadata.name}`;
+                    }
                   }}
                 >
                   {t('Inspect')}
@@ -240,7 +329,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
         ],
       };
     });
-  }, [pushSecrets, loaded, openDropdowns, t]);
+  }, [pushSecrets, clusterPushSecrets, loaded, openDropdowns, t]);
 
   // Handle case where PushSecret CRDs might not be installed
   const getErrorMessage = () => {
@@ -265,7 +354,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
       {/* Delete Modal */}
       <Modal
         variant={ModalVariant.small}
-        title={`${t('Delete')} ${t('PushSecret')}`}
+        title={`${t('Delete')} ${deleteModal.pushSecret && isClusterPushSecret(deleteModal.pushSecret) ? t('ClusterPushSecret') : t('PushSecret')}`}
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
       >
@@ -278,7 +367,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
           <div style={{ marginBottom: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.5' }}>
               {t('Are you sure you want to delete the {resourceType} "{name}"?', {
-                resourceType: 'PushSecret',
+                resourceType: deleteModal.pushSecret && isClusterPushSecret(deleteModal.pushSecret) ? 'ClusterPushSecret' : 'PushSecret',
                 name: deleteModal.pushSecret?.metadata.name,
               })}
             </p>
