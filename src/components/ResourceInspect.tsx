@@ -54,13 +54,13 @@ const ClusterExternalSecretModel = {
 
 const SecretStoreModel = {
   group: 'external-secrets.io',
-  version: 'v1beta1',
+  version: 'v1',
   kind: 'SecretStore',
 };
 
 const ClusterSecretStoreModel = {
   group: 'external-secrets.io',
-  version: 'v1beta1',
+  version: 'v1',
   kind: 'ClusterSecretStore',
 };
 
