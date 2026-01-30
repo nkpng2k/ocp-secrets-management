@@ -13,12 +13,12 @@ import {
   FlexItem,
 } from '@patternfly/react-core';
 import { KeyIcon } from '@patternfly/react-icons';
-import { CertificatesTable } from './CertificatesTable';
-import { IssuersTable } from './IssuersTable';
-import { ExternalSecretsTable } from './ExternalSecretsTable';
-import { SecretStoresTable } from './SecretStoresTable';
-import { PushSecretsTable } from './PushSecretsTable';
-import { SecretProviderClassTable } from './SecretProviderClassTable';
+import { CertificatesTable } from './components/CertificatesTable';
+import { IssuersTable } from './components/IssuersTable';
+import { ExternalSecretsTable } from './components/ExternalSecretsTable';
+import { SecretStoresTable } from './components/SecretStoresTable';
+import { PushSecretsTable } from './components/PushSecretsTable';
+import { SecretProviderClassTable } from './components/SecretProviderClassTable';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 
 type OperatorType = 'cert-manager' | 'external-secrets' | 'secrets-store-csi' | 'all';
@@ -394,3 +394,4 @@ export default function SecretsManagement() {
     </>
   );
 }
+

@@ -591,3 +591,4 @@ export const ResourceInspect: React.FC = () => {
     </>
   );
 };
+
