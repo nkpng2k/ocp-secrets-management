@@ -333,9 +333,9 @@ export const ResourceInspect: React.FC = () => {
   const renderSecretProviderClassPodStatuses = () => {
     if (resourceType !== 'secretproviderclasses' || !resource) return null;
 
-    // Filter pod statuses that reference this SecretProviderClass
+    // Filter pod statuses that reference this SecretProviderClass (skip entries without status)
     const relevantPodStatuses = (podStatuses || []).filter(
-      podStatus => podStatus.status.secretProviderClassName === resource.metadata.name
+      podStatus => podStatus.status?.secretProviderClassName === resource.metadata.name
     );
 
     if (relevantPodStatuses.length === 0) {
@@ -365,13 +365,13 @@ export const ResourceInspect: React.FC = () => {
               <tbody>
                 {relevantPodStatuses.map((podStatus) => (
                   <tr key={podStatus.metadata.name}>
-                    <td>{podStatus.status.podName || podStatus.metadata.name}</td>
+                    <td>{podStatus.status?.podName || podStatus.metadata.name}</td>
                     <td>
                       <Label 
-                        color={podStatus.status.mounted ? 'green' : 'red'} 
-                        icon={podStatus.status.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
+                        color={podStatus.status?.mounted ? 'green' : 'red'} 
+                        icon={podStatus.status?.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
                       >
-                        {podStatus.status.mounted ? t('Yes') : t('No')}
+                        {podStatus.status?.mounted ? t('Yes') : t('No')}
                       </Label>
                     </td>
                     <td>{formatTimestamp(podStatus.metadata.creationTimestamp)}</td>

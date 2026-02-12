@@ -132,12 +132,13 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
   });
 
   const columns = [
-    { title: t('Name'), width: 16 },
-    { title: t('Namespace'), width: 10 },
-    { title: t('Secret'), width: 16 },
-    { title: t('Issuer'), width: 16 },
-    { title: t('DNS Names'), width: 20 },
-    { title: t('Status'), width: 12 },
+    { title: t('Name'), width: 14 },
+    { title: t('Namespace'), width: 9 },
+    { title: t('Secret'), width: 14 },
+    { title: t('Issuer'), width: 14 },
+    { title: t('DNS Names'), width: 18 },
+    { title: t('Status'), width: 11 },
+    { title: t('Expiry Date'), width: 10 },
     { title: '', width: 10 }, // Actions column
   ];
 
@@ -160,6 +161,13 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
+          ),
+          (
+            <span>
+              {cert.metadata.annotations?.['expiry-date'] ??
+                cert.metadata.annotations?.['expiryDate'] ??
+                '-'}
+            </span>
           ),
           (
             <Dropdown

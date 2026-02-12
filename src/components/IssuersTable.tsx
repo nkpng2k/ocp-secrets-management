@@ -161,14 +161,15 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
   const loadError = issuersError || clusterIssuersError;
 
   const columns = [
-    { title: t('Name'), width: 14 },
-    { title: t('Namespace'), width: 12 },
-    { title: t('Type'), width: 10 },
-    { title: t('Scope'), width: 10 },
-    { title: t('Issuer Type'), width: 12 },
-    { title: t('Details'), width: 22 },
-    { title: t('Status'), width: 10 },
-    { title: '', width: 10 }, // Actions column
+    { title: t('Name'), width: 13 },
+    { title: t('Namespace'), width: 11 },
+    { title: t('Type'), width: 9 },
+    { title: t('Scope'), width: 9 },
+    { title: t('Issuer Type'), width: 11 },
+    { title: t('Details'), width: 20 },
+    { title: t('Status'), width: 9 },
+    { title: t('Expiry Date'), width: 10 },
+    { title: '', width: 8 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -205,6 +206,13 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
+          ),
+          (
+            <span>
+              {issuer.metadata.annotations?.['expiry-date'] ??
+                issuer.metadata.annotations?.['expiryDate'] ??
+                '-'}
+            </span>
           ),
           (
             <Dropdown

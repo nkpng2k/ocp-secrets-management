@@ -42,9 +42,9 @@ const getProviderIcon = (provider: string) => {
 };
 
 const getSecretProviderClassStatus = (spc: SecretProviderClass, podStatuses: SecretProviderClassPodStatus[]) => {
-  // Find pod statuses for this SecretProviderClass
+  // Find pod statuses for this SecretProviderClass (skip entries without status)
   const relevantPodStatuses = podStatuses.filter(
-    podStatus => podStatus.status.secretProviderClassName === spc.metadata.name
+    podStatus => podStatus.status?.secretProviderClassName === spc.metadata.name
   );
 
   if (relevantPodStatuses.length === 0) {
@@ -52,7 +52,7 @@ const getSecretProviderClassStatus = (spc: SecretProviderClass, podStatuses: Sec
   }
 
   // Check if any pod has this SecretProviderClass mounted
-  const mountedPods = relevantPodStatuses.filter(podStatus => podStatus.status.mounted === true);
+  const mountedPods = relevantPodStatuses.filter(podStatus => podStatus.status?.mounted === true);
 
   if (mountedPods.length > 0) {
     return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
@@ -143,13 +143,14 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
   const loadError = spcLoadError || podStatusesLoadError;
 
   const columns = [
-    { title: t('Name'), width: 16 },
-    { title: t('Namespace'), width: 12 },
-    { title: t('Provider'), width: 12 },
-    { title: t('Secret Objects'), width: 14 },
-    { title: t('Parameters'), width: 24 },
-    { title: t('Status'), width: 12 },
-    { title: '', width: 10 }, // Actions column
+    { title: t('Name'), width: 14 },
+    { title: t('Namespace'), width: 11 },
+    { title: t('Provider'), width: 11 },
+    { title: t('Secret Objects'), width: 12 },
+    { title: t('Parameters'), width: 21 },
+    { title: t('Status'), width: 11 },
+    { title: t('Expiry Date'), width: 11 },
+    { title: '', width: 9 }, // Actions column
   ];
 
   const rows = React.useMemo(() => {
@@ -187,6 +188,13 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
+          ),
+          (
+            <span>
+              {spc.metadata.annotations?.['expiry-date'] ??
+                spc.metadata.annotations?.['expiryDate'] ??
+                '-'}
+            </span>
           ),
           (
             <Dropdown

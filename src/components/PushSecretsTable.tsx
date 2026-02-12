@@ -136,13 +136,14 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
   const loadError = pushSecretsError || clusterPushSecretsError;
 
   const columns = [
-    { title: t('Name'), width: 16 },
-    { title: t('Type'), width: 10 },
-    { title: t('Namespace'), width: 12 },
-    { title: t('Secret Store'), width: 18 },
-    { title: t('Source Secret'), width: 16 },
-    { title: t('Refresh Interval'), width: 12 },
-    { title: t('Status'), width: 10 },
+    { title: t('Name'), width: 14 },
+    { title: t('Type'), width: 9 },
+    { title: t('Namespace'), width: 11 },
+    { title: t('Secret Store'), width: 16 },
+    { title: t('Source Secret'), width: 14 },
+    { title: t('Refresh Interval'), width: 11 },
+    { title: t('Status'), width: 9 },
+    { title: t('Expiry Date'), width: 10 },
     { title: '', width: 6 }, // Actions column
   ];
 
@@ -186,6 +187,13 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
             <Label color={conditionStatus.color as any} icon={conditionStatus.icon}>
               {conditionStatus.status}
             </Label>
+          ),
+          (
+            <span>
+              {pushSecret.metadata.annotations?.['expiry-date'] ??
+                pushSecret.metadata.annotations?.['expiryDate'] ??
+                '-'}
+            </span>
           ),
           (
             <Dropdown

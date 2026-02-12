@@ -84,27 +84,39 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
   const hasSpecifiedWidths = totalSpecifiedWidth > 0;
   const defaultWidth = hasSpecifiedWidths ? undefined : 100 / columns.length;
 
+  const subtleBorder = '1px solid #3e8635';
+
   return (
-    <div className="co-m-table-grid co-m-table-grid--bordered" data-test={dataTest}>
+    <div className="co-m-table-grid" data-test={dataTest} style={{ border: 'none' }}>
       <div className="table-responsive">
-        <table className="table table-hover" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <table
+          className="table table-hover"
+          style={{
+            tableLayout: 'fixed',
+            width: '100%',
+            minWidth: `${columns.length * 110}px`,
+            borderCollapse: 'collapse',
+            border: 'none',
+          }}
+        >
           <thead>
-            <tr>
+            <tr style={{ borderBottom: subtleBorder }}>
               {columns.map((column, index) => {
-                const width = hasSpecifiedWidths 
+                const width = hasSpecifiedWidths
                   ? `${(column.width || 0)}%`
                   : `${defaultWidth}%`;
-                
+
                 return (
-                  <th 
-                    key={index} 
+                  <th
+                    key={index}
                     role="columnheader"
-                    style={{ 
+                    style={{
                       width,
                       paddingLeft: '1rem',
                       paddingRight: '1rem',
                       textAlign: 'left',
-                      verticalAlign: 'middle'
+                      verticalAlign: 'middle',
+                      border: 'none',
                     }}
                   >
                     {column.title}
@@ -115,20 +127,21 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.cells.map((cell, cellIndex) => (
-                  <td 
-                    key={cellIndex}
+              <tr key={rowIndex} style={{ borderBottom: subtleBorder }}>
+                {columns.map((_column, colIndex) => (
+                  <td
+                    key={colIndex}
                     style={{
                       paddingLeft: '1rem',
                       paddingRight: '1rem',
                       textAlign: 'left',
                       verticalAlign: 'middle',
                       wordWrap: 'break-word',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      border: 'none',
                     }}
                   >
-                    {cell}
+                    {row.cells[colIndex] ?? null}
                   </td>
                 ))}
               </tr>
