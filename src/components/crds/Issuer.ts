@@ -16,6 +16,7 @@ export interface Issuer {
     name: string;
     namespace?: string;
     creationTimestamp: string;
+    annotations?: Record<string, string>;
   };
   spec: {
     acme?: {

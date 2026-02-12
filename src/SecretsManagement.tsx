@@ -198,7 +198,7 @@ export default function SecretsManagement() {
           <Title headingLevel="h1" size="2xl" className="co-m-pane__heading-title">
             <KeyIcon className="co-m-resource-icon co-m-resource-icon--lg" /> {t('Secrets Management')}
           </Title>
-          <p className="help-block">
+          <p className="help-block" style={{ textAlign: 'left' }}>
             {t('Manage certificates, external secrets, and secret stores across your cluster.')}
           </p>
         </div>

@@ -16,6 +16,7 @@ export interface SecretStore {
     name: string;
     namespace?: string;
     creationTimestamp: string;
+    annotations?: Record<string, string>;
   };
   scope?: 'Namespace' | 'Cluster';
   spec: {

@@ -10,6 +10,7 @@ export interface Certificate {
     name: string;
     namespace: string;
     creationTimestamp: string;
+    annotations?: Record<string, string>;
   };
   spec: {
     secretName: string;

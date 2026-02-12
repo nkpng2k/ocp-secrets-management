@@ -17,6 +17,7 @@ export interface ExternalSecret {
     name: string;
     namespace: string;
     creationTimestamp: string;
+    annotations?: Record<string, string>;
   };
   spec: {
     secretStoreRef?: {
@@ -53,6 +54,7 @@ export interface ClusterExternalSecret {
     name: string;
     namespace?: string; // ClusterExternalSecret is cluster-scoped
     creationTimestamp: string;
+    annotations?: Record<string, string>;
   };
   spec: {
     externalSecretSpec: {

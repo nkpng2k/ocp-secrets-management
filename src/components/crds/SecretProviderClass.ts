@@ -51,7 +51,7 @@ export interface SecretProviderClassPodStatus {
     namespace: string;
     creationTimestamp?: string;
   };
-  status: {
+  status?: {
     mounted: boolean;
     secretProviderClassName: string;
     podName?: string;
