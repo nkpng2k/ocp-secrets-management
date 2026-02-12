@@ -84,7 +84,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
   const hasSpecifiedWidths = totalSpecifiedWidth > 0;
   const defaultWidth = hasSpecifiedWidths ? undefined : 100 / columns.length;
 
-  const subtleBorder = '1px solid #3e8635';
+  const subtleBorder = '1px solid #e1e5e9';
 
   return (
     <div className="co-m-table-grid" data-test={dataTest} style={{ border: 'none' }}>
