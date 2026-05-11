@@ -85,11 +85,19 @@ const getConditionStatus = (externalSecret: ExternalSecretResource) => {
   );
 
   if (!readyCondition) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   if (readyCondition.status === 'True') {
-    return { status: 'Synced', icon: <CheckCircleIcon />, color: 'green' };
+    return {
+      status: 'Synced',
+      icon: <CheckCircleIcon />,
+      labelStatus: 'success' as NonNullable<LabelProps['status']>,
+    };
   }
 
   const syncCondition = externalSecret.status?.conditions?.find(
@@ -97,10 +105,18 @@ const getConditionStatus = (externalSecret: ExternalSecretResource) => {
   );
 
   if (syncCondition?.status === 'False') {
-    return { status: 'Sync Failed', icon: <TimesCircleIcon />, color: 'red' };
+    return {
+      status: 'Sync Failed',
+      icon: <TimesCircleIcon />,
+      labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+    };
   }
 
-  return { status: 'Syncing', icon: <SyncAltIcon />, color: 'blue' };
+  return {
+    status: 'Syncing',
+    icon: <SyncAltIcon />,
+    labelStatus: 'info' as NonNullable<LabelProps['status']>,
+  };
 };
 
 interface ExternalSecretsTableProps {
@@ -289,11 +305,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
           secretStore,
           refreshInterval,
           nextRefresh,
-          <Label
-            key={`${secretId}-status`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`${secretId}-status`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown

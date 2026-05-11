@@ -28,20 +28,32 @@ const getConditionStatus = (certificate: Certificate) => {
   );
 
   if (!readyCondition) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   if (readyCondition.status === 'True') {
-    return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
+    return {
+      status: 'Ready',
+      icon: <CheckCircleIcon />,
+      labelStatus: 'success' as NonNullable<LabelProps['status']>,
+    };
   }
 
-  return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
+  return {
+    status: 'Not Ready',
+    icon: <TimesCircleIcon />,
+    labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+  };
 };
 
 function getExpiryLabel(
   notAfter: string | undefined,
   t: (key: string, opts?: object) => string,
-): { text: string; color: LabelProps['color']; icon: React.ReactElement } | null {
+): { text: string; status: NonNullable<LabelProps['status']>; icon: React.ReactElement } | null {
   if (!notAfter) return null;
   const expiry = new Date(notAfter).getTime();
   if (Number.isNaN(expiry)) return null;
@@ -52,7 +64,7 @@ function getExpiryLabel(
   if (diffDays < 0) {
     const text =
       days === 0 || days === -1 ? t('Expired') : t('Expired {{count}} days ago', { count: -days });
-    return { text, color: 'red', icon: <ExclamationCircleIcon /> };
+    return { text, status: 'danger', icon: <ExclamationCircleIcon /> };
   }
   if (days <= 2) {
     let text: string;
@@ -62,18 +74,18 @@ function getExpiryLabel(
     } else {
       text = t('{{count}} days remaining', { count: days });
     }
-    return { text, color: 'red', icon: <ExclamationCircleIcon /> };
+    return { text, status: 'danger', icon: <ExclamationCircleIcon /> };
   }
   if (days <= 30) {
     return {
       text: t('{{count}} days remaining', { count: days }),
-      color: 'yellow',
+      status: 'warning',
       icon: <ExclamationTriangleIcon />,
     };
   }
   return {
     text: t('{{count}} days remaining', { count: days }),
-    color: 'green',
+    status: 'success',
     icon: <CheckCircleIcon />,
   };
 }
@@ -205,17 +217,13 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
           `${cert.spec.issuerRef.name} (${cert.spec.issuerRef.kind})`,
           dnsNames,
           expiryInfo ? (
-            <Label key={`expiry-${certId}`} color={expiryInfo.color} icon={expiryInfo.icon}>
+            <Label key={`expiry-${certId}`} status={expiryInfo.status} icon={expiryInfo.icon}>
               {expiryInfo.text}
             </Label>
           ) : (
             '-'
           ),
-          <Label
-            key={`status-${certId}`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`status-${certId}`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown

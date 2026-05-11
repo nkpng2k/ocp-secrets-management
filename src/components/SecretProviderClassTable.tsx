@@ -54,24 +54,36 @@ const getSecretProviderClassStatus = (
   );
 
   if (relevantPodStatuses.length === 0) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   // Check if any pod has this SecretProviderClass mounted (guard against missing status)
   const mountedPods = relevantPodStatuses.filter((podStatus) => podStatus.status?.mounted === true);
 
   if (mountedPods.length > 0) {
-    return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
+    return {
+      status: 'Ready',
+      icon: <CheckCircleIcon />,
+      labelStatus: 'success' as NonNullable<LabelProps['status']>,
+    };
   }
 
   // If there are pod statuses but none are mounted
-  return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
+  return {
+    status: 'Not Ready',
+    icon: <TimesCircleIcon />,
+    labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+  };
 };
 
 function getExpiryLabel(
   dateStr: string | undefined,
   t: (key: string, opts?: object) => string,
-): { text: string; color: LabelProps['color']; icon: React.ReactElement } | null {
+): { text: string; status: NonNullable<LabelProps['status']>; icon: React.ReactElement } | null {
   if (!dateStr || dateStr === '-') return null;
   const expiry = new Date(dateStr).getTime();
   if (Number.isNaN(expiry)) return null;
@@ -82,7 +94,7 @@ function getExpiryLabel(
   if (diffDays < 0) {
     const text =
       days === 0 || days === -1 ? t('Expired') : t('Expired {{count}} days ago', { count: -days });
-    return { text, color: 'red', icon: <ExclamationCircleIcon /> };
+    return { text, status: 'danger', icon: <ExclamationCircleIcon /> };
   }
   if (days <= 2) {
     let text: string;
@@ -92,18 +104,18 @@ function getExpiryLabel(
     } else {
       text = t('{{count}} days remaining', { count: days });
     }
-    return { text, color: 'red', icon: <ExclamationCircleIcon /> };
+    return { text, status: 'danger', icon: <ExclamationCircleIcon /> };
   }
   if (days <= 30) {
     return {
       text: t('{{count}} days remaining', { count: days }),
-      color: 'yellow',
+      status: 'warning',
       icon: <ExclamationTriangleIcon />,
     };
   }
   return {
     text: t('{{count}} days remaining', { count: days }),
-    color: 'green',
+    status: 'success',
     icon: <CheckCircleIcon />,
   };
 }
@@ -240,17 +252,13 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
           secretObjectsText,
           parametersText,
           expiryInfo ? (
-            <Label key={`expiry-${spcId}`} color={expiryInfo.color} icon={expiryInfo.icon}>
+            <Label key={`expiry-${spcId}`} status={expiryInfo.status} icon={expiryInfo.icon}>
               {expiryInfo.text}
             </Label>
           ) : (
             '-'
           ),
-          <Label
-            key={`status-${spcId}`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`status-${spcId}`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown

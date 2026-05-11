@@ -33,14 +33,26 @@ const getConditionStatus = (issuer: Issuer) => {
   const readyCondition = issuer.status?.conditions?.find((condition) => condition.type === 'Ready');
 
   if (!readyCondition) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   if (readyCondition.status === 'True') {
-    return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
+    return {
+      status: 'Ready',
+      icon: <CheckCircleIcon />,
+      labelStatus: 'success' as NonNullable<LabelProps['status']>,
+    };
   }
 
-  return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
+  return {
+    status: 'Not Ready',
+    icon: <TimesCircleIcon />,
+    labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+  };
 };
 
 interface IssuersTableProps {
@@ -200,11 +212,7 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
           issuer.metadata.namespace || 'Cluster',
           issuerType,
           details,
-          <Label
-            key={`status-${issuerId}`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`status-${issuerId}`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown

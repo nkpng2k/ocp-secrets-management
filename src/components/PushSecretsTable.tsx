@@ -31,7 +31,11 @@ import {
 
 const getPushSecretStatus = (pushSecret: PushSecretResource) => {
   if (!pushSecret.status?.conditions) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   const readyCondition = pushSecret.status.conditions.find(
@@ -40,13 +44,25 @@ const getPushSecretStatus = (pushSecret: PushSecretResource) => {
 
   if (readyCondition) {
     if (readyCondition.status === 'True') {
-      return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
+      return {
+        status: 'Ready',
+        icon: <CheckCircleIcon />,
+        labelStatus: 'success' as NonNullable<LabelProps['status']>,
+      };
     } else if (readyCondition.status === 'False') {
-      return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
+      return {
+        status: 'Not Ready',
+        icon: <TimesCircleIcon />,
+        labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+      };
     }
   }
 
-  return { status: 'Syncing', icon: <SyncAltIcon />, color: 'blue' };
+  return {
+    status: 'Syncing',
+    icon: <SyncAltIcon />,
+    labelStatus: 'info' as NonNullable<LabelProps['status']>,
+  };
 };
 
 interface PushSecretsTableProps {
@@ -194,11 +210,7 @@ export const PushSecretsTable: React.FC<PushSecretsTableProps> = ({ selectedProj
           secretStoreText,
           sourceSecret,
           refreshInterval,
-          <Label
-            key={`status-${pushSecretId}`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`status-${pushSecretId}`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown
