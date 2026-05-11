@@ -70,14 +70,26 @@ const getConditionStatus = (secretStore: SecretStore) => {
   );
 
   if (!readyCondition) {
-    return { status: 'Unknown', icon: <ExclamationCircleIcon />, color: 'orange' };
+    return {
+      status: 'Unknown',
+      icon: <ExclamationCircleIcon />,
+      labelStatus: 'warning' as NonNullable<LabelProps['status']>,
+    };
   }
 
   if (readyCondition.status === 'True') {
-    return { status: 'Ready', icon: <CheckCircleIcon />, color: 'green' };
+    return {
+      status: 'Ready',
+      icon: <CheckCircleIcon />,
+      labelStatus: 'success' as NonNullable<LabelProps['status']>,
+    };
   }
 
-  return { status: 'Not Ready', icon: <TimesCircleIcon />, color: 'red' };
+  return {
+    status: 'Not Ready',
+    icon: <TimesCircleIcon />,
+    labelStatus: 'danger' as NonNullable<LabelProps['status']>,
+  };
 };
 
 interface SecretStoresTableProps {
@@ -240,11 +252,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
           isClusterScopedStore(secretStore) ? 'Cluster' : 'Namespace',
           providerType,
           providerDetails,
-          <Label
-            key={`status-${storeId}`}
-            color={conditionStatus.color as LabelProps['color']}
-            icon={conditionStatus.icon}
-          >
+          <Label key={`status-${storeId}`} status={conditionStatus.labelStatus} icon={conditionStatus.icon}>
             {conditionStatus.status}
           </Label>,
           <Dropdown
