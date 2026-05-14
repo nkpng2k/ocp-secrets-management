@@ -3,11 +3,7 @@ import Helmet from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import {
   Title,
-  Card,
-  CardBody,
-  CardTitle,
-  Grid,
-  GridItem,
+  Divider,
   Badge,
   Flex,
   FlexItem,
@@ -513,7 +509,7 @@ export default function SecretsManagement() {
           </Flex>
         </div>
 
-        <div className="co-m-pane__body-group">
+        <div className="co-m-pane__body-group" style={{ padding: '0 2rem' }}>
           {operatorsLoading && (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '64px' }}>
               <Spinner size="xl" />
@@ -523,166 +519,148 @@ export default function SecretsManagement() {
           {!operatorsLoading && !anyOperatorInstalled && <NoOperatorsInstalled />}
 
           {!operatorsLoading && anyOperatorInstalled && (
-            <Grid hasGutter>
+            <>
               {/* cert-manager Resources */}
               {shouldShowComponent('cert-manager', 'certificates') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('Certificates')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            cert-manager
-                          </Badge>
-                          <OperatorStatusBadge status={certManager} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <CertificatesTable selectedProject={filters.project} />
-                        ),
-                        'cert-manager',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('Certificates')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('cert-manager')}</Badge>
+                      <OperatorStatusBadge status={certManager} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <CertificatesTable selectedProject={filters.project} />
+                    ),
+                    'cert-manager',
+                  )}
+                </div>
               )}
 
               {shouldShowComponent('cert-manager', 'issuers') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('Issuers')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            cert-manager
-                          </Badge>
-                          <OperatorStatusBadge status={certManager} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <IssuersTable selectedProject={filters.project} />
-                        ),
-                        'cert-manager',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('Issuers')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('cert-manager')}</Badge>
+                      <OperatorStatusBadge status={certManager} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <IssuersTable selectedProject={filters.project} />
+                    ),
+                    'cert-manager',
+                  )}
+                </div>
               )}
 
               {/* External Secrets Resources */}
               {shouldShowComponent('external-secrets', 'externalsecrets') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('External Secrets')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            External Secrets Operator
-                          </Badge>
-                          <OperatorStatusBadge status={externalSecrets} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <ExternalSecretsTable selectedProject={filters.project} />
-                        ),
-                        'external-secrets',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('External Secrets')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('External Secrets Operator')}</Badge>
+                      <OperatorStatusBadge status={externalSecrets} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <ExternalSecretsTable selectedProject={filters.project} />
+                    ),
+                    'external-secrets',
+                  )}
+                </div>
               )}
 
               {shouldShowComponent('external-secrets', 'secretstores') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('Secret Stores')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            External Secrets Operator
-                          </Badge>
-                          <OperatorStatusBadge status={externalSecrets} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <SecretStoresTable selectedProject={filters.project} />
-                        ),
-                        'external-secrets',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('Secret Stores')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('External Secrets Operator')}</Badge>
+                      <OperatorStatusBadge status={externalSecrets} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <SecretStoresTable selectedProject={filters.project} />
+                    ),
+                    'external-secrets',
+                  )}
+                </div>
               )}
 
               {shouldShowComponent('external-secrets', 'pushsecrets') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('Push Secrets')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            External Secrets Operator
-                          </Badge>
-                          <OperatorStatusBadge status={externalSecrets} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <PushSecretsTable selectedProject={filters.project} />
-                        ),
-                        'external-secrets',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('Push Secrets')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('External Secrets Operator')}</Badge>
+                      <OperatorStatusBadge status={externalSecrets} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <PushSecretsTable selectedProject={filters.project} />
+                    ),
+                    'external-secrets',
+                  )}
+                </div>
               )}
 
               {/* Secrets Store CSI Driver Resources */}
               {shouldShowComponent('secrets-store-csi', 'secretproviderclasses') && (
-                <GridItem span={12}>
-                  <Card>
-                    <CardTitle>
-                      <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                          {t('Secret Provider Classes')}
-                          <Badge isRead style={{ marginLeft: '8px' }}>
-                            Secrets Store CSI Driver
-                          </Badge>
-                          <OperatorStatusBadge status={secretsStoreCSI} />
-                        </FlexItem>
-                      </Flex>
-                    </CardTitle>
-                    <CardBody>
-                      {renderOperatorContent(
-                        () => (
-                          <SecretProviderClassTable selectedProject={filters.project} />
-                        ),
-                        'secrets-store-csi',
-                      )}
-                    </CardBody>
-                  </Card>
-                </GridItem>
+                <div style={{ marginBottom: '2rem' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginBottom: '0.5rem' }}>
+                    <FlexItem>
+                      <Title headingLevel="h3" size="md">
+                        {t('Secret Provider Classes')}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Badge isRead>{t('Secrets Store CSI Driver')}</Badge>
+                      <OperatorStatusBadge status={secretsStoreCSI} />
+                    </FlexItem>
+                  </Flex>
+                  <Divider style={{ marginBottom: '1rem' }} />
+                  {renderOperatorContent(
+                    () => (
+                      <SecretProviderClassTable selectedProject={filters.project} />
+                    ),
+                    'secrets-store-csi',
+                  )}
+                </div>
               )}
-            </Grid>
+            </>
           )}
         </div>
       </div>
