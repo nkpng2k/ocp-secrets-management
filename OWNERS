@@ -1,9 +1,5 @@
 approvers:
-  - christianvogt
-  - florkbr
-  - spadgett
-  - vojtechszocs
-  - jhadvig
-  - TheRealJon
-  - rhamilto
-component: Management Console
+  - sapurohi
+  - anandkuma77
+  - nkpng2k
+component: Secrets Management Console
