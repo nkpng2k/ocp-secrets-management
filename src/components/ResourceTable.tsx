@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, EmptyStateBody, Title, Alert, AlertVariant } from '@patternfly/react-core';
+import { EmptyState, EmptyStateBody, Alert, AlertVariant } from '@patternfly/react-core';
 import { SearchIcon } from '@patternfly/react-icons';
 
 interface Column {
@@ -41,7 +41,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
       ? t('No resources of this type are currently available in project {{project}}.', {
           project: selectedProject,
         })
-      : t('No resources of this type are currently available in the demo project.');
+      : t('No resources of this type are currently available in all projects.');
 
   if (loading) {
     return (
@@ -67,13 +67,11 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
     return (
       <div className="co-m-pane__body" data-test={`${dataTest}-empty`}>
         <EmptyState
-          titleText={
-            <Title size="lg" headingLevel="h4">
-              {emptyStateTitle || t('No resources found')}
-            </Title>
-          }
+          variant="xs"
+          icon={SearchIcon}
+          headingLevel="h4"
+          titleText={emptyStateTitle || t('No resources found')}
         >
-          <SearchIcon className="co-m-empty-state__icon" />
           <EmptyStateBody>{emptyStateBody ?? defaultEmptyStateBody}</EmptyStateBody>
         </EmptyState>
       </div>
