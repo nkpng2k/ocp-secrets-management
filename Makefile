@@ -42,21 +42,21 @@ scripts-image: require-container-runtime ## Build the container image for runnin
 # Run fetch/generate as root so writes succeed on the mount, then chown to host user (single run per target).
 .PHONY: fetch-crds
 fetch-crds: scripts-image ## Fetch CRDs from upstream repositories (containerized)
-	@mkdir -p $(CURDIR)/crds
+	@mkdir -p "$(CURDIR)/crds"
 	$(CONTAINER_RUNTIME) run --rm --user 0:0 \
-		-v $(CURDIR)/crds:/app/crds:z \
-		-v $(CURDIR)/crd-sources.json:/app/crd-sources.json:ro,z \
+		-v "$(CURDIR)/crds:/app/crds:z" \
+		-v "$(CURDIR)/crd-sources.json:/app/crd-sources.json:ro,z" \
 		$(SCRIPTS_IMAGE) \
-		sh -c "ts-node scripts/fetch-crds.ts && chown -R $(shell id -u):$(shell id -g) /app/crds"
+		sh -c "ts-node scripts/fetch-crds.ts && chown -R $(shell id -u):$(shell id -g) /app/crds || true"
 
 .PHONY: generate-types
 generate-types: scripts-image ## Generate TypeScript interfaces from CRDs (containerized)
-	@mkdir -p $(CURDIR)/src/generated/crds
+	@mkdir -p "$(CURDIR)/src/generated/crds"
 	$(CONTAINER_RUNTIME) run --rm --user 0:0 \
-		-v $(CURDIR)/crds:/app/crds:ro,z \
-		-v $(CURDIR)/src/generated/crds:/app/src/generated/crds:z \
+		-v "$(CURDIR)/crds:/app/crds:ro,z" \
+		-v "$(CURDIR)/src/generated/crds:/app/src/generated/crds:z" \
 		$(SCRIPTS_IMAGE) \
-		sh -c "ts-node scripts/generate-types.ts && chown -R $(shell id -u):$(shell id -g) /app/src/generated/crds"
+		sh -c "ts-node scripts/generate-types.ts && chown -R $(shell id -u):$(shell id -g) /app/src/generated/crds || true"
 
 .PHONY: update-types
 update-types: fetch-crds generate-types ## Fetch CRDs and generate TypeScript (containerized)
@@ -67,7 +67,7 @@ update-types: fetch-crds generate-types ## Fetch CRDs and generate TypeScript (c
 .PHONY: plugin-typecheck
 plugin-typecheck: require-container-runtime update-types ## Run TypeScript type-check (catches unused vars, type errors). Requires CRD types (update-types) first.
 	$(CONTAINER_RUNTIME) run --rm \
-		-v $(CURDIR):/app:z \
+		-v "$(CURDIR):/app:z" \
 		-w /app \
 		node:20-alpine \
 		sh -c "yarn install && yarn typecheck"
@@ -75,7 +75,7 @@ plugin-typecheck: require-container-runtime update-types ## Run TypeScript type-
 .PHONY: plugin-lint
 plugin-lint: require-container-runtime ## Run ESLint and stylelint on plugin source.
 	$(CONTAINER_RUNTIME) run --rm \
-		-v $(CURDIR):/app:z \
+		-v "$(CURDIR):/app:z" \
 		-w /app \
 		node:20-alpine \
 		sh -c "yarn install && yarn lint"
@@ -91,7 +91,7 @@ BUILD_OPTS ?=
 .PHONY: plugin-build
 plugin-build: plugin-typecheck ## Build the console plugin (containerized); runs plugin-typecheck first.
 	$(CONTAINER_RUNTIME) run --rm \
-		-v $(CURDIR):/app:z \
+		-v "$(CURDIR):/app:z" \
 		-w /app \
 		node:20-alpine \
 		sh -c "yarn install && yarn build"
@@ -109,7 +109,7 @@ plugin-push: require-container-runtime ## Push the plugin container image (overr
 .PHONY: shell
 shell: scripts-image ## Open a shell in the scripts container
 	$(CONTAINER_RUNTIME) run --rm -it \
-		-v $(CURDIR):/app:z \
+		-v "$(CURDIR):/app:z" \
 		-w /app \
 		$(SCRIPTS_IMAGE) \
 		sh

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import Helmet from 'react-helmet';
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
 import {
   Title,
   Card,
@@ -831,9 +831,7 @@ export const ResourceInspect: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{t('{resourceType} details', { resourceType: getResourceTypeDisplayName() })}</title>
-      </Helmet>
+      <DocumentTitle>{t('{resourceType} details', { resourceType: getResourceTypeDisplayName() })}</DocumentTitle>
 
       <div className="co-m-pane__body">
         <div className="co-m-pane__heading">
