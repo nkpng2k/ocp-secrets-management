@@ -4,8 +4,16 @@
 .PHONY: all
 all: plugin-build ## Build plugin (default target)
 
+.PHONY: plugin-test
+plugin-test: require-container-runtime ## Run frontend unit tests (Jest)
+	$(CONTAINER_RUNTIME) run --rm \
+		-v $(CURDIR):/app:z \
+		-w /app \
+		node:20-alpine \
+		sh -c "yarn install && yarn test"
+
 .PHONY: test
-test: ## Run tests (operator unit tests)
+test: plugin-test ## Run all unit tests (frontend Jest + operator Go tests)
 	$(MAKE) -C operator test
 
 .PHONY: help
