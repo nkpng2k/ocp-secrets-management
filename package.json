@@ -23,6 +23,7 @@
     "webpack": "node -r ts-node/register ./node_modules/.bin/webpack",
     "fetch-crds": "ts-node scripts/fetch-crds.ts",
     "generate-types": "ts-node scripts/generate-types.ts",
+    "typecheck": "tsc --noEmit",
     "update-types": "yarn fetch-crds && yarn generate-types"
   },
   "dependencies": {

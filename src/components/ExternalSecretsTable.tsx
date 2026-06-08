@@ -59,7 +59,7 @@ function parseDurationMs(duration: string): number {
 function getNextRefreshDisplay(
   refreshTime: string | undefined,
   refreshIntervalStr: string,
-  t: (key: string, opts?: object) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
   if (!refreshTime) return '-';
   const lastRefresh = new Date(refreshTime).getTime();

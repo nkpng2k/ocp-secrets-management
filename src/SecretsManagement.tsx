@@ -1,5 +1,5 @@
 import * as React from 'react';
-import Helmet from 'react-helmet';
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
 import { useTranslation } from 'react-i18next';
 import {
   Title,
@@ -345,9 +345,7 @@ export default function SecretsManagement() {
 
   return (
     <>
-      <Helmet>
-        <title data-test="secrets-management-page-title">{t('Secrets Management')}</title>
-      </Helmet>
+      <DocumentTitle>{t('Secrets Management')}</DocumentTitle>
       <div className="co-m-pane__body co-m-pane__body--no-top-margin">
         <div
           className="co-m-pane__heading"

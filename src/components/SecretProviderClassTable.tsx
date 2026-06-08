@@ -82,7 +82,7 @@ const getSecretProviderClassStatus = (
 
 function getExpiryLabel(
   dateStr: string | undefined,
-  t: (key: string, opts?: object) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): { text: string; status: NonNullable<LabelProps['status']>; icon: React.ReactElement } | null {
   if (!dateStr || dateStr === '-') return null;
   const expiry = new Date(dateStr).getTime();

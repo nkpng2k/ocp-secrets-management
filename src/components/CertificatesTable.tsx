@@ -52,7 +52,7 @@ const getConditionStatus = (certificate: Certificate) => {
 
 function getExpiryLabel(
   notAfter: string | undefined,
-  t: (key: string, opts?: object) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): { text: string; status: NonNullable<LabelProps['status']>; icon: React.ReactElement } | null {
   if (!notAfter) return null;
   const expiry = new Date(notAfter).getTime();

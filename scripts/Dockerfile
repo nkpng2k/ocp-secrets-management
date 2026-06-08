@@ -16,7 +16,7 @@ RUN addgroup -g 1001 -S appgroup && \
 # Copy scripts and config
 COPY scripts/*.ts ./scripts/
 COPY crd-sources.json ./
-COPY tsconfig.json ./
+COPY scripts/tsconfig.json ./
 
 # Create output directories and set ownership
 RUN mkdir -p crds src/generated/crds && \
