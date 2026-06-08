@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import SecretsManagement from './SecretsManagement';
 import { useOperatorDetection } from './hooks/useOperatorDetection';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
@@ -12,6 +11,7 @@ jest.mock('./hooks/useOperatorDetection', () => ({
 jest.mock('@openshift-console/dynamic-plugin-sdk', () => ({
   useK8sWatchResource: jest.fn(),
   consoleFetch: jest.fn(),
+  DocumentTitle: ({ children }: { children: string }) => <title>{children}</title>,
 }));
 
 // Mock child table components
@@ -106,9 +106,9 @@ describe('SecretsManagement', () => {
   });
 
   describe('Page Structure', () => {
-    it('renders the page title in Helmet', () => {
-      render(<SecretsManagement />);
-      expect(screen.getByTestId('secrets-management-page-title')).toBeInTheDocument();
+    it('renders the page title', () => {
+      const { container } = render(<SecretsManagement />);
+      expect(container.querySelector('title')).toHaveTextContent('Secrets Management');
     });
 
     it('renders the page heading with icon', () => {

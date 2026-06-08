@@ -2,7 +2,7 @@
  * Integration tests for SecretsManagement component
  * Tests user interactions and filter behavior
  */
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SecretsManagement from './SecretsManagement';
 import { useOperatorDetection } from './hooks/useOperatorDetection';
@@ -16,6 +16,7 @@ jest.mock('./hooks/useOperatorDetection', () => ({
 jest.mock('@openshift-console/dynamic-plugin-sdk', () => ({
   useK8sWatchResource: jest.fn(),
   consoleFetch: jest.fn(),
+  DocumentTitle: ({ children }: { children: string }) => <title>{children}</title>,
 }));
 
 // Mock child table components
