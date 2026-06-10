@@ -4,6 +4,10 @@
 .devcontainer/dev.env
 integration-tests/videos
 integration-tests/screenshots
+integration-tests/.auth/
+integration-tests/results/
+test-results/
+get_helm.sh
 # Cursor Rules Directory
 .cursor
 

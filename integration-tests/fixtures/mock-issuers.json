@@ -1,0 +1,14 @@
+[
+  {
+    "metadata": {
+      "name": "selfsigned-issuer",
+      "creationTimestamp": "2024-01-01T00:00:00Z"
+    },
+    "spec": {
+      "selfSigned": {}
+    },
+    "status": {
+      "conditions": [{ "type": "Ready", "status": "True" }]
+    }
+  }
+]

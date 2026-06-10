@@ -18,7 +18,7 @@ test: plugin-test ## Run all unit tests (frontend Jest + operator Go tests)
 
 .PHONY: help
 help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # Container engine: podman by default (override with CONTAINER_RUNTIME=docker if needed)
 CONTAINER_RUNTIME ?= podman
@@ -82,6 +82,28 @@ plugin-lint: require-container-runtime ## Run ESLint and stylelint on plugin sou
 
 .PHONY: plugin-check
 plugin-check: plugin-typecheck plugin-lint ## Run typecheck + lint (use before plugin-image to fail fast).
+
+##@ E2E Tests (Playwright)
+
+.PHONY: test-e2e
+test-e2e: ## Run post-merge E2E tests (headed, requires live cluster: BRIDGE_BASE_ADDRESS, BRIDGE_KUBEADMIN_PASSWORD)
+	yarn test-e2e
+
+.PHONY: test-e2e-headless
+test-e2e-headless: ## Run post-merge E2E tests headless (CI mode)
+	yarn test-e2e-headless
+
+.PHONY: test-e2e-premerge
+test-e2e-premerge: ## Run pre-merge E2E tests (mock-based, no cluster required)
+	yarn test-e2e-premerge
+
+.PHONY: test-e2e-premerge-headed
+test-e2e-premerge-headed: ## Run pre-merge E2E tests headed (for local debugging)
+	yarn test-e2e-premerge-headed
+
+.PHONY: test-e2e-all
+test-e2e-all: ## Run all E2E tests (pre-merge + post-merge, headless)
+	yarn playwright test --project=pre-merge --project=chromium
 
 ##@ Plugin Build (Containerized)
 

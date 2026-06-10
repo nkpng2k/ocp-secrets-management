@@ -6,7 +6,7 @@ This project is a minimal OpenShift Console Plugin for managing resources
 associated with secrets management. This includes the CRDs for:
 - cert-manager
 - external secrets operator
-- secrets store csi (TODO)
+- secrets store csi driver
 
 This project is based off of the OpenShift dynamic console plugin template seen [here](https://github.com/openshift/console-plugin-template)
 
@@ -97,7 +97,76 @@ Before you begin, ensure you have the following installed on your system:
 - `yarn build` - Build the plugin for production
 - `yarn build-dev` - Build the plugin for development
 - `yarn lint` - Run ESLint for code quality checks
-- `yarn test` - Run Jest tests
+- `yarn test` - Run Jest unit tests
+
+### E2E Testing (Playwright)
+
+The project includes a comprehensive E2E test suite built with [Playwright](https://playwright.dev/). Tests are split into two categories:
+
+#### Pre-merge tests (mock-based, no cluster required)
+
+These tests use intercepted API responses (mocks) so they can run anywhere -- locally, in CI, without a live cluster.
+
+```bash
+make test-e2e-premerge          # headless (CI mode)
+make test-e2e-premerge-headed   # headed (visible browser, for debugging)
+```
+
+What they cover:
+- Plugin hidden state when no operators are installed
+- Dashboard rendering with mock certificates, external secrets, and secret provider classes
+- Empty state messages for all resource types
+- Filter dropdowns and status badges
+
+#### Post-merge tests (requires a live OpenShift cluster)
+
+These tests run against a real cluster with operators and resources installed. They validate actual API interactions and UI behavior.
+
+**Required environment variables:**
+
+| Variable | Description | Example |
+|---|---|---|
+| `BRIDGE_BASE_ADDRESS` | OpenShift Console URL | `https://console-openshift-console.apps.<cluster>.devcluster.openshift.com` |
+| `BRIDGE_KUBEADMIN_PASSWORD` | kubeadmin password | `wPNqQ-eQJnk-oBC8x-47B7p` |
+| `OC_SERVER` | API server URL (used by delete test for `oc` commands) | `https://api.<cluster>.devcluster.openshift.com:6443` |
+
+```bash
+export BRIDGE_BASE_ADDRESS='https://console-openshift-console.apps.<cluster>.devcluster.openshift.com'
+export BRIDGE_KUBEADMIN_PASSWORD='<password>'
+export OC_SERVER='https://api.<cluster>.devcluster.openshift.com:6443'
+
+make test-e2e                   # headed (watch tests run)
+make test-e2e-headless          # headless (CI mode)
+```
+
+What they cover:
+- Certificate expiry warning badges (success/warning/danger colors)
+- Delete resource via UI (creates test cert, deletes via modal, verifies removal)
+- Inspect pane with metadata, specification, status, and sensitive data toggle
+- Secrets Store CSI Driver: SecretProviderClass listing, provider icons, inspect pane
+
+#### Run everything
+
+```bash
+make test-e2e-all    # pre-merge + post-merge, headless (requires cluster env vars)
+```
+
+#### Cluster prerequisites for post-merge tests
+
+The cluster must have the following installed:
+
+1. **cert-manager Operator for Red Hat OpenShift** (`openshift-cert-manager-operator`, channel `stable-v1`)
+2. **External Secrets Operator for Red Hat OpenShift** (`openshift-external-secrets-operator`, channel `stable-v1`)
+3. **Secrets Store CSI Driver Operator** (`secrets-store-csi-driver-operator`, channel `stable`)
+4. **SMC console plugin** deployed and enabled
+5. **Test resources**: ClusterIssuer, Certificates (varied expiry), ExternalSecret, SecretStore, SecretProviderClasses
+
+> **Note on ESO:** Use the **Red Hat** operator (`openshift-external-secrets-operator` from `redhat-operators`), not the community one. The Red Hat version serves the `v1` API that the plugin expects. The community operator only serves `v1beta1`, which causes "Model does not exist" errors.
+
+#### Headed vs Headless
+
+- **Headed** (`--headed`) -- Opens a visible browser window so you can watch tests interact with the UI. Useful for debugging.
+- **Headless** (default) -- Runs the browser invisibly in the background. Used in CI environments where there is no display.
 
 ### Operator installation (build and deploy)
 
@@ -171,11 +240,13 @@ This plugin provides a comprehensive interface for managing secrets-related Kube
 #### **Resource Management**
 - **Certificates** (cert-manager.io/v1)
 - **Issuers & ClusterIssuers** (cert-manager.io/v1)
-- **ExternalSecrets** (external-secrets.io/v1beta1)
-- **SecretStores & ClusterSecretStores** (external-secrets.io/v1beta1)
+- **ExternalSecrets & ClusterExternalSecrets** (external-secrets.io/v1)
+- **SecretStores & ClusterSecretStores** (external-secrets.io/v1)
+- **PushSecrets & ClusterPushSecrets** (external-secrets.io/v1alpha1)
+- **SecretProviderClasses** (secrets-store.csi.x-k8s.io/v1)
 
 #### **Key Capabilities**
-- **Resource Filtering** - Filter by operator (cert-manager, external-secrets) and resource kind
+- **Resource Filtering** - Filter by operator (cert-manager, external-secrets, secrets-store-csi) and resource kind
 - **Resource Inspection** - View detailed metadata, labels, annotations, specifications, and status
 - **Resource Deletion** - Delete resources with confirmation dialogs
 - **Sensitive Data Toggle** - Show/hide sensitive information in resource details

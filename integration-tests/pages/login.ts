@@ -43,11 +43,11 @@ export class LoginPage {
       return;
     }
 
-    await this.page.locator('[data-test-id="login"]').waitFor({ state: 'visible' });
+    await this.page.locator('[data-test-id="login"]').waitFor({ state: 'visible', timeout: 60000 });
     await this.page.locator('#inputUsername').fill(username);
     await this.fillSensitive(this.page.locator('#inputPassword'), password);
     await this.page.locator('button[type=submit]').click();
-    await this.page.getByTestId('username').waitFor({ state: 'attached' });
+    await this.page.getByTestId('username').waitFor({ state: 'attached', timeout: 60000 });
   }
 
   async logout() {
