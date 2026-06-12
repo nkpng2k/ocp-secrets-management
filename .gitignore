@@ -17,3 +17,10 @@ crds/
 operator/bin
 operator/cover.out
 bin
+
+# Coverage reports
+coverage/
+
+# Documentation (local only)
+CODECOV_INTEGRATION_STATUS.md
+CODECOV_SETUP_STEPS.md

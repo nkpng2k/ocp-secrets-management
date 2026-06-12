@@ -22,6 +22,23 @@ const config: Config = {
   },
   setupFilesAfterEnv: ['./setup-tests.ts'],
   testPathIgnorePatterns: ['integration-tests'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx,js,jsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.spec.{ts,tsx,js,jsx}',
+    '!src/**/__tests__/**',
+    '!src/**/__mocks__/**',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['lcov', 'json', 'text', 'text-summary', 'html'],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
 };
 
 export default config;
