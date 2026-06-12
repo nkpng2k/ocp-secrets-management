@@ -1,0 +1,49 @@
+# Dockerfile for coverage-instrumented builds
+# This image is used in CI/CD to run tests with coverage collection enabled
+# and upload coverage reports to Codecov
+
+FROM registry.access.redhat.com/ubi9/nodejs-20:latest AS build
+
+USER root
+
+# Install yarn if not present
+RUN command -v yarn || npm i -g yarn
+
+# Add source code
+ADD . /usr/src/app
+WORKDIR /usr/src/app
+
+# Install dependencies
+RUN yarn install
+
+# Install codecov uploader
+RUN curl -Os https://uploader.codecov.io/latest/linux/codecov && \
+    chmod +x codecov && \
+    mv codecov /usr/local/bin/codecov
+
+# Runtime stage
+FROM registry.access.redhat.com/ubi9/nodejs-20:latest
+
+USER root
+
+# Install yarn and codecov uploader
+RUN command -v yarn || npm i -g yarn && \
+    curl -Os https://uploader.codecov.io/latest/linux/codecov && \
+    chmod +x codecov && \
+    mv codecov /usr/local/bin/codecov
+
+# Copy source and node_modules from build stage
+COPY --from=build /usr/src/app /usr/src/app
+WORKDIR /usr/src/app
+
+# Create coverage output directory
+RUN mkdir -p /tmp/coverage && chmod 777 /tmp/coverage
+
+# Set environment for coverage
+ENV COVERAGE_DIR=/tmp/coverage
+ENV CI=true
+
+USER 1001
+
+# Default command runs tests with coverage
+CMD ["yarn", "coverage"]

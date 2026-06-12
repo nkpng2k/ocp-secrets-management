@@ -1,5 +1,7 @@
 # OpenShift Console Plugin for Secrets Management
 
+[![codecov](https://codecov.io/gh/openshift/ocp-secrets-management-console/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift/ocp-secrets-management-console)
+
 This project is a minimal OpenShift Console Plugin for managing resources
 associated with secrets management. This includes the CRDs for:
 - cert-manager
@@ -217,3 +219,41 @@ If resources don't load:
 - Hot reloading is enabled for development efficiency
 - All console debugging has been removed for production readiness
 - CSRF tokens are handled automatically for API requests
+
+## Code Coverage
+
+This project uses [Codecov](https://codecov.io) to track and report code coverage metrics.
+
+### Running Coverage Locally
+
+To generate a coverage report on your local machine:
+
+```bash
+# Run tests with coverage
+yarn coverage
+
+# View the HTML coverage report in your browser
+open coverage/lcov-report/index.html  # macOS
+xdg-open coverage/lcov-report/index.html  # Linux
+```
+
+### Coverage Reports
+
+- **Dashboard**: View detailed coverage reports at [codecov.io/gh/openshift/ocp-secrets-management-console](https://codecov.io/gh/openshift/ocp-secrets-management-console)
+- **Pull Requests**: Coverage reports are automatically posted as comments on pull requests
+- **Coverage Threshold**: Minimum coverage threshold is set to 50% for all metrics (branches, functions, lines, statements)
+
+### CI/CD Coverage Workflow
+
+Coverage is automatically collected and uploaded to Codecov during CI/CD runs:
+
+1. **Presubmit Tests**: Coverage is collected on every PR
+2. **Postsubmit Tests**: Coverage baseline is updated on merges to `main`
+3. **E2E Coverage**: End-to-end test coverage is tracked separately with the `e2e` flag
+
+### Coverage Configuration
+
+Coverage settings are configured in:
+- `jest.config.ts` - Jest coverage collection and thresholds
+- `.codecov.yml` - Codecov behavior and reporting preferences
+- `images/ci/Dockerfile.coverage` - Coverage-enabled container image for CI
