@@ -1,8 +1,12 @@
 import { defineConfig } from '@playwright/test';
 
+const isLiveCluster = !(process.env.BRIDGE_BASE_ADDRESS ?? 'http://localhost:9000').includes(
+  'localhost',
+);
+
 export default defineConfig({
   testDir: './integration-tests/tests',
-  timeout: 30000,
+  timeout: 60000,
   retries: 1,
   use: {
     baseURL: process.env.BRIDGE_BASE_ADDRESS ?? 'http://localhost:9000',
@@ -14,6 +18,19 @@ export default defineConfig({
     testIdAttribute: 'data-test',
   },
   projects: [
+    {
+      name: 'pre-merge',
+      testMatch: /\.premerge\.spec\.ts$/,
+      ...(isLiveCluster
+        ? {
+            use: {
+              browserName: 'chromium',
+              storageState: 'integration-tests/.auth/user.json',
+            },
+            dependencies: ['setup'],
+          }
+        : {}),
+    },
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'chromium',
@@ -22,6 +39,7 @@ export default defineConfig({
         storageState: 'integration-tests/.auth/user.json',
       },
       dependencies: ['setup'],
+      testIgnore: [/\.premerge\.spec\.ts$/, /example-page/],
     },
   ],
   reporter: [

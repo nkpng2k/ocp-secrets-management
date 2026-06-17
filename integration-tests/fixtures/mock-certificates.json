@@ -1,0 +1,50 @@
+[
+  {
+    "metadata": {
+      "name": "selfsigned-ca-2",
+      "namespace": "cert-manager-operator",
+      "creationTimestamp": "2024-01-01T00:00:00Z"
+    },
+    "spec": {
+      "secretName": "ca-root-secret-2",
+      "issuerRef": { "name": "selfsigned-issuer", "kind": "ClusterIssuer" },
+      "dnsNames": ["selfsigned-ca.dns.name"]
+    },
+    "status": {
+      "conditions": [{ "type": "Ready", "status": "True" }],
+      "notAfter": "2028-06-01T00:00:00Z"
+    }
+  },
+  {
+    "metadata": {
+      "name": "selfsigned-ca-3",
+      "namespace": "cert-manager-operator",
+      "creationTimestamp": "2024-01-01T00:00:00Z"
+    },
+    "spec": {
+      "secretName": "ca-root-secret-3",
+      "issuerRef": { "name": "selfsigned-issuer", "kind": "ClusterIssuer" },
+      "dnsNames": ["selfsigned-ca.dns.name"]
+    },
+    "status": {
+      "conditions": [{ "type": "Ready", "status": "True" }],
+      "notAfter": "2026-06-23T00:00:00Z"
+    }
+  },
+  {
+    "metadata": {
+      "name": "expiring-cert",
+      "namespace": "cert-manager-operator",
+      "creationTimestamp": "2024-01-01T00:00:00Z"
+    },
+    "spec": {
+      "secretName": "expiring-secret",
+      "issuerRef": { "name": "selfsigned-issuer", "kind": "ClusterIssuer" },
+      "dnsNames": ["expiring.dns.name"]
+    },
+    "status": {
+      "conditions": [{ "type": "Ready", "status": "True" }],
+      "notAfter": "2024-01-02T00:00:00Z"
+    }
+  }
+]
