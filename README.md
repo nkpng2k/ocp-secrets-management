@@ -99,11 +99,36 @@ Before you begin, ensure you have the following installed on your system:
 - `yarn lint` - Run ESLint for code quality checks
 - `yarn test` - Run Jest tests
 
-### Operator installation (build and deploy)
+### Deployment to OpenShift Cluster
 
-The plugin is deployed by the **Secrets Management Operator** in the `operator/` directory. To build both images, push them to your registry, and deploy on a cluster:
+The plugin is deployed by the **Secrets Management Operator** in the `operator/` directory. 
 
 **Prerequisites:** podman or docker, `oc` logged into your OpenShift cluster, and push access to your container registry (e.g. quay.io).
+
+#### Quick Deployment Scripts
+
+We provide **two deployment methods**:
+
+**Method 1: Direct Deployment** (Development - Fast)
+```bash
+# Build and deploy directly to cluster (no OLM)
+export SM_QUAY_USER=myusername
+./scripts/deploy-to-cluster.sh
+```
+
+**Method 2: Bundle Deployment** (Production - Via OLM)
+```bash
+# Build and deploy via OLM bundle
+export SM_QUAY_USER=myusername
+export SM_IMAGE_TAG=v1.0.0
+./scripts/deploy-via-bundle.sh
+```
+
+See [DEPLOYMENT_METHODS.md](./DEPLOYMENT_METHODS.md) for detailed comparison.
+
+#### Manual Build and Deploy
+
+Alternatively, build each image individually:
 
 1. **Build the plugin image** (from repo root). Set `PLUGIN_IMG` to your image (defaults in Makefile use `openshift.io/ocp-secrets-management:latest`):
 

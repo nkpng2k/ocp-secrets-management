@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -35,12 +36,24 @@ const (
 	// PluginName is the name of the console plugin
 	PluginName = "ocp-secrets-management"
 
-	// Default image for the plugin
-	DefaultPluginImage = "openshift.io/ocp-secrets-management:latest"
-
 	// Plugin port
 	PluginPort = 9443
 )
+
+var (
+	// DefaultPluginImage is the default image for the plugin.
+	// In production (OLM), this is set via RELATED_IMAGE_PLUGIN environment variable from the bundle CSV.
+	// For development, it falls back to the hardcoded default.
+	DefaultPluginImage = getPluginImage()
+)
+
+// getPluginImage returns the plugin image from environment or default
+func getPluginImage() string {
+	if img := os.Getenv("RELATED_IMAGE_PLUGIN"); img != "" {
+		return img
+	}
+	return "openshift.io/ocp-secrets-management:latest"
+}
 
 // ConsolePlugin GroupVersionKind for OpenShift
 var consolePluginGVK = schema.GroupVersionKind{

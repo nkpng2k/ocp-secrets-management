@@ -19,10 +19,11 @@
 set -euo pipefail
 
 # ─── Configuration from environment ──────────────────────────────────
-QUAY_USER="${SM_QUAY_USER:-sapurohi}"
+QUAY_USER="${SM_QUAY_USER:-anankuma}"
 IMAGE_TAG="${SM_IMAGE_TAG:-latest}"
 PLUGIN_IMG="quay.io/${QUAY_USER}/ocp-secrets-management:${IMAGE_TAG}"
 OPERATOR_IMG="quay.io/${QUAY_USER}/ocp-secrets-management-operator:${IMAGE_TAG}"
+BUNDLE_IMG="quay.io/${QUAY_USER}/ocp-secrets-management-operator-bundle:${IMAGE_TAG}"
 NAMESPACE="openshift-secrets-management"
 # ─────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,28 @@ build_images() {
   info "Pushing operator image..."
   make -C "${OPERATOR_DIR}" podman-push IMG="${OPERATOR_IMG}"
   ok "Operator image pushed"
+}
+
+build_bundle() {
+  info "Generating bundle manifests..."
+  # Note: This requires kustomize and operator-sdk to be installed
+  # If not available, bundle generation will be skipped
+  if ! command -v kustomize >/dev/null 2>&1 || ! [ -x "${OPERATOR_DIR}/../bin/operator-sdk" ]; then
+    echo "  ⚠️  Skipping bundle generation (kustomize or operator-sdk not found)"
+    echo "  ⚠️  For production, run: cd operator && make bundle bundle-build bundle-push"
+    return 0
+  fi
+
+  make -C "${OPERATOR_DIR}" bundle IMG="${OPERATOR_IMG}" PLUGIN_IMG="${PLUGIN_IMG}"
+  ok "Bundle manifests generated"
+
+  info "Building bundle image: ${BUNDLE_IMG}"
+  make -C "${OPERATOR_DIR}" bundle-build BUNDLE_IMG="${BUNDLE_IMG}"
+  ok "Bundle image built"
+
+  info "Pushing bundle image..."
+  make -C "${OPERATOR_DIR}" bundle-push BUNDLE_IMG="${BUNDLE_IMG}"
+  ok "Bundle image pushed"
 }
 
 # ─── Pull secret ─────────────────────────────────────────────────────
@@ -190,6 +213,21 @@ main() {
       ;;
     --deploy)
       deploy
+      ;;
+    --bundle)
+      build_images
+      build_bundle
+      echo ""
+      echo "═══════════════════════════════════════════════════════════════"
+      ok "Bundle build complete!"
+      echo ""
+      echo "  Plugin image:   ${PLUGIN_IMG}"
+      echo "  Operator image: ${OPERATOR_IMG}"
+      echo "  Bundle image:   ${BUNDLE_IMG}"
+      echo ""
+      echo "  To test the bundle:"
+      echo "    operator-sdk run bundle ${BUNDLE_IMG}"
+      echo "═══════════════════════════════════════════════════════════════"
       ;;
     *)
       build_images
