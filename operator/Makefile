@@ -195,10 +195,12 @@ BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 .PHONY: bundle
 bundle: $(KUSTOMIZE) $(OPERATOR_SDK) manifests ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Generating the bundle manifests and metadata..."
+	@echo "  Operator image: $(IMG)"
+	@echo "  Plugin image:   $(PLUGIN_IMG)"
 	@$(OPERATOR_SDK) generate kustomize manifests -q
 	@cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	@$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
-	@go run ./scripts/patch-bundle-csv.go
+	@PLUGIN_IMG=$(PLUGIN_IMG) go run ./scripts/patch-bundle-csv.go
 	@$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-build
