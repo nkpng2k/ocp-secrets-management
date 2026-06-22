@@ -13,7 +13,7 @@ CATALOG_IMG ?= openshift.io/ocp-secrets-management-operator-catalog:v0.1.0
 VERSION ?= 0.1.0
 
 # Tool versions
-CONTROLLER_GEN_VERSION ?= v0.14.0
+CONTROLLER_GEN_VERSION ?= v0.16.5
 KUSTOMIZE_VERSION ?= v5.3.0
 # v1.34.0 has no release assets (404); use v1.34.1 or later for curl download.
 OPERATOR_SDK_VERSION ?= v1.34.1
