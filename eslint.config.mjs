@@ -12,7 +12,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'node_modules/', 'integration-tests/cypress.config.js'],
+    ignores: ['dist/', 'node_modules/'],
   },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
