@@ -1,11 +1,13 @@
 import * as React from 'react';
 import {
   DefaultNode,
+  LabelPosition,
   Node,
   observer,
   WithSelectionProps,
 } from '@patternfly/react-topology';
 import { GraphNodeData } from '../model/types';
+import { NODE_PROVIDER } from '../model/buildCSIGraphModel';
 
 interface ResourceNodeProps extends WithSelectionProps {
   element: Node;
@@ -13,6 +15,7 @@ interface ResourceNodeProps extends WithSelectionProps {
 
 const ResourceNode: React.FC<ResourceNodeProps> = observer(({ element, ...rest }) => {
   const data = element.getData() as GraphNodeData | undefined;
+  const isProvider = element.getType() === NODE_PROVIDER;
 
   return (
     <DefaultNode
@@ -21,6 +24,8 @@ const ResourceNode: React.FC<ResourceNodeProps> = observer(({ element, ...rest }
       badgeColor={data?.badgeColor}
       showStatusDecorator
       showStatusBackground
+      secondaryLabel={isProvider ? undefined : data?.kind}
+      labelPosition={isProvider ? LabelPosition.bottom : LabelPosition.top}
       {...rest}
     />
   );
