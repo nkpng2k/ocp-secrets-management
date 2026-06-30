@@ -1,0 +1,42 @@
+.topology-container {
+  display: flex;
+  height: calc(100vh - 180px);
+  min-height: 400px;
+}
+
+.topology-graph-area {
+  flex: 1;
+  position: relative;
+}
+
+.topology-sidebar {
+  width: 350px;
+  border-left: 1px solid var(--pf-t--global--border--color--default, #d2d2d2);
+  overflow-y: auto;
+  padding: var(--pf-t--global--spacer--md, 16px);
+  background: var(--pf-t--global--background--color--primary--default, #fff);
+}
+
+.topology-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--pf-t--global--spacer--md, 16px);
+}
+
+.topology-sidebar__details dt {
+  font-weight: var(--pf-t--global--font--weight--body--bold, 700);
+  margin-top: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.topology-sidebar__details dd {
+  margin-left: 0;
+  margin-bottom: var(--pf-t--global--spacer--xs, 4px);
+}
+
+.topology-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 180px);
+}

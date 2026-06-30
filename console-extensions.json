@@ -16,6 +16,14 @@
     }
   },
   {
+    "type": "console.page/route",
+    "properties": {
+      "exact": false,
+      "path": ["/secrets-management/topology"],
+      "component": { "$codeRef": "TopologyPage.TopologyPage" }
+    }
+  },
+  {
     "type": "console.navigation/section",
     "properties": {
       "id": "plugins",

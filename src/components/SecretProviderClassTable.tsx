@@ -287,6 +287,15 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
               >
                 {t('Inspect')}
               </DropdownItem>
+              <DropdownItem
+                key="topology"
+                onClick={() => {
+                  const url = `/secrets-management/topology/secretproviderclasses/${spc.metadata.namespace}/${spc.metadata.name}`;
+                  window.location.href = url;
+                }}
+              >
+                {t('Topology')}
+              </DropdownItem>
               <DropdownItem key="delete" onClick={() => openDeleteModal(spc)}>
                 {t('Delete')}
               </DropdownItem>

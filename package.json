@@ -39,6 +39,7 @@
     "@patternfly/react-core": "^6.4.3",
     "@patternfly/react-icons": "^6.4.0",
     "@patternfly/react-table": "^6.4.3",
+    "@patternfly/react-topology": "~6.4.0",
     "@playwright/browser-chromium": "^1.59.1",
     "@playwright/test": "^1.59.1",
     "@swc/core": "^1.15.32",
@@ -104,7 +105,8 @@
     "description": "OpenShift Console plugin for managing secrets and sensitive data.",
     "exposedModules": {
       "SecretsManagement": "./SecretsManagement",
-      "ResourceInspect": "./ResourceInspect"
+      "ResourceInspect": "./ResourceInspect",
+      "TopologyPage": "./TopologyPage"
     },
     "dependencies": {
       "@console/pluginAPI": ">=4.22.0-0"
