@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {
   Model,
+  GRAPH_LAYOUT_END_EVENT,
   SELECTION_EVENT,
   SelectionEventListener,
   TopologyControlBar,
@@ -47,6 +48,16 @@ const TopologyGraphInner: React.FC<TopologyGraphInnerProps> = ({
       controller.removeEventListener(SELECTION_EVENT, onSelect);
     };
   }, [controller, onSelect]);
+
+  React.useEffect(() => {
+    const onLayoutEnd = () => {
+      controller.getGraph().fit(80);
+    };
+    controller.addEventListener(GRAPH_LAYOUT_END_EVENT, onLayoutEnd);
+    return () => {
+      controller.removeEventListener(GRAPH_LAYOUT_END_EVENT, onLayoutEnd);
+    };
+  }, [controller]);
 
   React.useEffect(() => {
     const directionChanged = prevVertical.current !== vertical;
