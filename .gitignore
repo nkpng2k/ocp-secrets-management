@@ -28,6 +28,3 @@ coverage/
 # Documentation (local only)
 CODECOV_INTEGRATION_STATUS.md
 CODECOV_SETUP_STEPS.md
-
-# CI-generated at build time; not committed
-images_digest.conf
