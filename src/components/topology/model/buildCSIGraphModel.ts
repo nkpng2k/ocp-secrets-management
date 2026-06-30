@@ -13,6 +13,20 @@ const NODE_WORKLOAD = 'workload';
 
 export { NODE_PROVIDER, NODE_SPC, NODE_SPCPS, NODE_WORKLOAD };
 
+function podPhaseToStatus(phase: string | undefined): NodeStatus {
+  switch (phase) {
+    case 'Running':
+    case 'Succeeded':
+      return NodeStatus.success;
+    case 'Pending':
+      return NodeStatus.warning;
+    case 'Failed':
+      return NodeStatus.danger;
+    default:
+      return NodeStatus.default;
+  }
+}
+
 export interface CSITopologyResources {
   secretProviderClasses: SecretProviderClass[];
   podStatuses: SecretProviderClassPodStatus[];
@@ -118,7 +132,7 @@ export function buildCSIGraphModel(
         label: provider,
         width: 75,
         height: 75,
-        shape: NodeShape.stadium,
+        shape: NodeShape.rhombus,
         status: NodeStatus.default,
         data: providerData,
       });
@@ -240,6 +254,48 @@ export function buildCSIGraphModel(
           type: EDGE_TYPE,
           source: psId,
           target: `workload:${ns}/${workload.name}`,
+        });
+      } else if (podName) {
+        const podId = `pod:${ns}/${podName}`;
+        if (!workloadSeen.has(podId)) {
+          workloadSeen.add(podId);
+          const matchingPod = resources.pods.find(
+            (p) => p.metadata?.name === podName && p.metadata?.namespace === ns,
+          );
+          const podPhase = (matchingPod as { status?: { phase?: string } })?.status?.phase;
+          const podStatus = podPhaseToStatus(podPhase);
+          const podData: GraphNodeData = {
+            kind: 'Pod',
+            label: podName,
+            status: podStatus,
+            badge: 'Pod',
+            namespace: ns,
+            resource: matchingPod,
+            details: [
+              { label: 'Name', value: podName },
+              { label: 'Kind', value: 'Pod' },
+              { label: 'Phase', value: podPhase ?? 'Unknown' },
+              { label: 'Namespace', value: ns },
+            ],
+            highlighted: podId === focusResourceId,
+          };
+          nodes.push({
+            id: podId,
+            type: NODE_WORKLOAD,
+            label: podName,
+            width: 75,
+            height: 75,
+            shape: NodeShape.hexagon,
+            status: podStatus,
+            data: podData,
+          });
+        }
+
+        edges.push({
+          id: `${psId}->${podId}`,
+          type: EDGE_TYPE,
+          source: psId,
+          target: podId,
         });
       }
     }
