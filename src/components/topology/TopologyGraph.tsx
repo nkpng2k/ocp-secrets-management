@@ -12,19 +12,34 @@ import {
   defaultControlButtonsOptions,
   DagreLayout,
   LEFT_TO_RIGHT,
+  TOP_TO_BOTTOM,
+  LayoutFactory,
   useVisualizationController,
 } from '@patternfly/react-topology';
+import { Button, Tooltip } from '@patternfly/react-core';
+import {
+  LongArrowAltRightIcon,
+  LongArrowAltDownIcon,
+} from '@patternfly/react-icons';
 import nodeFactory from './nodes/nodeFactory';
 import './TopologyGraph.css';
 
 interface TopologyGraphInnerProps {
   model: Model;
+  vertical: boolean;
+  onToggleDirection: () => void;
   onSelect: (ids: string[]) => void;
 }
 
-const TopologyGraphInner: React.FC<TopologyGraphInnerProps> = ({ model, onSelect }) => {
+const TopologyGraphInner: React.FC<TopologyGraphInnerProps> = ({
+  model,
+  vertical,
+  onToggleDirection,
+  onSelect,
+}) => {
   const controller = useVisualizationController();
   const initialized = React.useRef(false);
+  const prevVertical = React.useRef(vertical);
 
   React.useEffect(() => {
     controller.addEventListener<SelectionEventListener>(SELECTION_EVENT, onSelect);
@@ -34,11 +49,17 @@ const TopologyGraphInner: React.FC<TopologyGraphInnerProps> = ({ model, onSelect
   }, [controller, onSelect]);
 
   React.useEffect(() => {
-    controller.fromModel(model, initialized.current);
+    const directionChanged = prevVertical.current !== vertical;
+    prevVertical.current = vertical;
+
+    controller.registerLayoutFactory(createLayoutFactory(vertical ? TOP_TO_BOTTOM : LEFT_TO_RIGHT));
+    // Force non-merge rebuild when direction changes so the layout is recreated
+    const merge = directionChanged ? false : initialized.current;
+    controller.fromModel(model, merge);
     if (!initialized.current && model.nodes && model.nodes.length > 0) {
       initialized.current = true;
     }
-  }, [model, controller]);
+  }, [model, vertical, controller]);
 
   return (
     <TopologyView
@@ -53,6 +74,18 @@ const TopologyGraphInner: React.FC<TopologyGraphInnerProps> = ({ model, onSelect
             expandAll: false,
             collapseAll: false,
             legend: false,
+            customButtons: [
+              {
+                id: 'toggle-direction',
+                icon: (
+                  <Tooltip content={vertical ? 'Switch to horizontal' : 'Switch to vertical'}>
+                    <Button variant="plain" onClick={onToggleDirection} style={{ padding: 0 }}>
+                      {vertical ? <LongArrowAltRightIcon /> : <LongArrowAltDownIcon />}
+                    </Button>
+                  </Tooltip>
+                ),
+              },
+            ],
           })}
         />
       }
@@ -67,25 +100,34 @@ interface TopologyGraphProps {
   onSelect: (ids: string[]) => void;
 }
 
+function createLayoutFactory(rankdir: string): LayoutFactory {
+  return (_type, graph) =>
+    new DagreLayout(graph, { rankdir, nodesep: 60, ranksep: 100, edgesep: 30 });
+}
+
 const TopologyGraph: React.FC<TopologyGraphProps> = ({ model, onSelect }) => {
+  const [vertical, setVertical] = React.useState(false);
   const controllerRef = React.useRef<Visualization | null>(null);
+
   if (!controllerRef.current) {
     const vis = new Visualization();
     vis.registerComponentFactory(nodeFactory);
-    vis.registerLayoutFactory((type, graph) =>
-      new DagreLayout(graph, {
-        rankdir: LEFT_TO_RIGHT,
-        nodesep: 60,
-        ranksep: 100,
-        edgesep: 30,
-      }),
-    );
+    vis.registerLayoutFactory(createLayoutFactory(LEFT_TO_RIGHT));
     controllerRef.current = vis;
   }
 
+  const handleToggle = React.useCallback(() => {
+    setVertical((v) => !v);
+  }, []);
+
   return (
     <VisualizationProvider controller={controllerRef.current}>
-      <TopologyGraphInner model={model} onSelect={onSelect} />
+      <TopologyGraphInner
+        model={model}
+        vertical={vertical}
+        onToggleDirection={handleToggle}
+        onSelect={onSelect}
+      />
     </VisualizationProvider>
   );
 };
