@@ -19,6 +19,15 @@ import {
   SecretProviderClassPodStatus,
 } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import {
+  useNamespacedWatchAllowed,
+  useNamespacedOnlyDeleteAllowed,
+} from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+  listErrorNamespace,
+} from '../utils/permissionErrors';
 
 const getProviderIcon = (provider: string) => {
   switch (provider.toLowerCase()) {
@@ -150,7 +159,10 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: t('SecretProviderClass'),
+          namespace: deleteModal.secretProviderClass?.metadata?.namespace,
+        }),
       }));
     }
   };
@@ -173,24 +185,52 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
     });
   };
 
+  const namespace = selectedProject === 'all' ? undefined : selectedProject;
+  const { allowed: nsWatchAllowed, loading: nsAccessLoading } = useNamespacedWatchAllowed(
+    SecretProviderClassModel,
+    namespace ?? '',
+  );
+  const canWatchInProject = !namespace || (nsWatchAllowed && !nsAccessLoading);
+  const canDelete = useNamespacedOnlyDeleteAllowed(SecretProviderClassModel, selectedProject);
+
   const [secretProviderClasses, spcLoaded, spcLoadError] = useK8sWatchResource<
     SecretProviderClass[]
-  >({
-    groupVersionKind: SecretProviderClassModel,
-    namespace: selectedProject === 'all' ? undefined : selectedProject,
-    isList: true,
-  });
+  >(
+    canWatchInProject
+      ? {
+          groupVersionKind: SecretProviderClassModel,
+          namespace,
+          isList: true,
+        }
+      : namespace
+        ? null
+        : {
+            groupVersionKind: SecretProviderClassModel,
+            namespace: undefined,
+            isList: true,
+          },
+  );
 
   const [podStatuses, podStatusesLoaded, podStatusesLoadError] = useK8sWatchResource<
     SecretProviderClassPodStatus[]
-  >({
-    groupVersionKind: SecretProviderClassPodStatusModel,
-    namespace: selectedProject === 'all' ? undefined : selectedProject,
-    isList: true,
-  });
+  >(
+    canWatchInProject
+      ? {
+          groupVersionKind: SecretProviderClassPodStatusModel,
+          namespace,
+          isList: true,
+        }
+      : namespace
+        ? null
+        : {
+            groupVersionKind: SecretProviderClassPodStatusModel,
+            namespace: undefined,
+            isList: true,
+          },
+  );
 
   const loaded = spcLoaded && podStatusesLoaded;
-  const loadError = spcLoadError || podStatusesLoadError;
+  const loadError = canWatchInProject ? spcLoadError || podStatusesLoadError : undefined;
 
   const columns = [
     { title: t('Name'), width: 15 },
@@ -262,7 +302,7 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
                   window.location.href = `/secrets-management/inspect/secretproviderclasses/${spc.metadata.namespace}/${spc.metadata.name}`;
                 },
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDelete
                 ? [
                     {
                       key: 'delete',
@@ -276,7 +316,7 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
         ],
       };
     });
-  }, [secretProviderClasses, podStatuses, loaded, t, deleteEnabled]);
+  }, [secretProviderClasses, podStatuses, loaded, t, deleteEnabled, canDelete]);
 
   return (
     <>
@@ -284,7 +324,10 @@ export const SecretProviderClassTable: React.FC<SecretProviderClassTableProps> =
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('Secret Provider Classes'),
+          namespace: listErrorNamespace(selectedProject),
+        })}
         emptyStateTitle={t('No secret provider classes found')}
         emptyStateBody={
           selectedProject === 'all'

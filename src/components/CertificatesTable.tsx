@@ -14,6 +14,12 @@ import { RowActionsMenu } from './RowActionsMenu';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 import { CertificateModel, Certificate } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import { useNamespacedOnlyDeleteAllowed } from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+  listErrorNamespace,
+} from '../utils/permissionErrors';
 
 const getConditionStatus = (certificate: Certificate) => {
   const readyCondition = certificate.status?.conditions?.find(
@@ -151,7 +157,10 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Failed to delete certificate',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: t('Certificate'),
+          namespace: deleteModal.certificate?.metadata?.namespace,
+        }),
       }));
     }
   };
@@ -170,6 +179,7 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
     namespace: selectedProject === 'all' ? undefined : selectedProject,
     isList: true,
   });
+  const canDelete = useNamespacedOnlyDeleteAllowed(CertificateModel, selectedProject);
 
   const columns = [
     { title: t('Name'), width: 15 },
@@ -225,7 +235,7 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
                 label: t('Inspect {{kind}}', { kind: t('Certificate') }),
                 onClick: () => handleInspect(cert),
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDelete
                 ? [
                     {
                       key: 'delete',
@@ -239,7 +249,7 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
         ],
       };
     });
-  }, [certificates, loaded, t, deleteEnabled]);
+  }, [certificates, loaded, t, deleteEnabled, canDelete]);
 
   return (
     <>
@@ -247,7 +257,10 @@ export const CertificatesTable: React.FC<CertificatesTableProps> = ({ selectedPr
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('Certificates'),
+          namespace: listErrorNamespace(selectedProject),
+        })}
         emptyStateTitle={t('No certificates found')}
         emptyStateBody={
           selectedProject === 'all'

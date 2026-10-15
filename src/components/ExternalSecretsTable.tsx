@@ -21,6 +21,17 @@ import {
   isClusterExternalSecret,
 } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import {
+  useOptionalClusterListWatch,
+  combineDualListWatchLoaded,
+  combineDualListWatchError,
+  useDualScopeDeleteAllowed,
+} from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+  listErrorNamespace,
+} from '../utils/permissionErrors';
 
 /** Parse Kubernetes/Go duration string (e.g. "1h", "30m", "1h30m") to milliseconds */
 function parseDurationMs(duration: string): number {
@@ -192,7 +203,12 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Failed to delete external secret',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: deleteModal.externalSecret?.metadata?.namespace
+            ? t('ExternalSecret')
+            : t('ClusterExternalSecret'),
+          namespace: deleteModal.externalSecret?.metadata?.namespace,
+        }),
       }));
     }
   };
@@ -215,24 +231,23 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
     isList: true,
   });
 
-  // Watch ClusterExternalSecrets (cluster-scoped)
-  const [clusterExternalSecrets, clusterExternalSecretsLoaded, clusterExternalSecretsError] =
-    useK8sWatchResource<ClusterExternalSecret[]>({
-      groupVersionKind: ClusterExternalSecretModel,
-      isList: true,
-    });
+  const clusterExternalSecretsWatch =
+    useOptionalClusterListWatch<ClusterExternalSecret>(ClusterExternalSecretModel);
+  const clusterExternalSecrets = clusterExternalSecretsWatch.data;
 
-  // Combine both resource types
   const allSecrets = React.useMemo(() => {
     const combined: ExternalSecretResource[] = [...(externalSecrets || [])];
-    if (clusterExternalSecrets) {
-      combined.push(...clusterExternalSecrets);
-    }
+    combined.push(...clusterExternalSecrets);
     return combined;
   }, [externalSecrets, clusterExternalSecrets]);
 
-  const loaded = externalSecretsLoaded && clusterExternalSecretsLoaded;
-  const loadError = externalSecretsError || clusterExternalSecretsError;
+  const loaded = combineDualListWatchLoaded(externalSecretsLoaded, clusterExternalSecretsWatch);
+  const loadError = combineDualListWatchError(externalSecretsError, clusterExternalSecretsWatch);
+  const canDeleteRow = useDualScopeDeleteAllowed(
+    ExternalSecretModel,
+    ClusterExternalSecretModel,
+    selectedProject,
+  );
 
   const columns = [
     { title: t('Name'), width: 15 },
@@ -308,7 +323,9 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
                 label: t('Inspect {{kind}}', { kind: resourceKind }),
                 onClick: () => handleInspect(resource),
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDeleteRow(
+                isClusterExternalSecret(resource) ? undefined : resource.metadata.namespace,
+              )
                 ? [
                     {
                       key: 'delete',
@@ -322,7 +339,7 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
         ],
       };
     });
-  }, [allSecrets, loaded, t, deleteEnabled]);
+  }, [allSecrets, loaded, t, deleteEnabled, canDeleteRow]);
 
   return (
     <>
@@ -330,7 +347,10 @@ export const ExternalSecretsTable: React.FC<ExternalSecretsTableProps> = ({ sele
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('External Secrets'),
+          namespace: listErrorNamespace(selectedProject),
+        })}
         emptyStateTitle={t('No external secrets found')}
         emptyStateBody={
           selectedProject === 'all'

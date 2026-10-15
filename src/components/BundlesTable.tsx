@@ -6,9 +6,17 @@ import { CheckCircleIcon, ExclamationCircleIcon, TimesCircleIcon } from '@patter
 import { ResourceTable } from './ResourceTable';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { RowActionsMenu } from './RowActionsMenu';
-import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
+import { consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 import { BundleModel, Bundle, BundleSource } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import {
+  useOptionalClusterListWatch,
+  useClusterOnlyDeleteAllowed,
+} from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+} from '../utils/permissionErrors';
 
 const getSyncedStatus = (bundle: Bundle) => {
   const syncedCondition = bundle.status?.conditions?.find(
@@ -138,7 +146,9 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({ selectedProject }) =
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Failed to delete bundle',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: t('Trust Bundles'),
+        }),
       }));
     }
   };
@@ -154,10 +164,11 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({ selectedProject }) =
 
   // Bundles are cluster-scoped, so no namespace filter is needed for the watch.
   // We still accept selectedProject for UI consistency but it won't filter results.
-  const [bundles, loaded, loadError] = useK8sWatchResource<Bundle[]>({
-    groupVersionKind: BundleModel,
-    isList: true,
-  });
+  const bundlesWatch = useOptionalClusterListWatch<Bundle>(BundleModel);
+  const bundles = bundlesWatch.data;
+  const loaded = bundlesWatch.loaded;
+  const loadError = bundlesWatch.error as { message?: string } | undefined;
+  const canDelete = useClusterOnlyDeleteAllowed(BundleModel);
 
   const columns = [
     { title: t('Name'), width: 16 },
@@ -199,7 +210,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({ selectedProject }) =
                 label: t('Inspect {{kind}}', { kind: t('Bundle') }),
                 onClick: () => handleInspect(bundle),
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDelete
                 ? [
                     {
                       key: 'delete',
@@ -213,7 +224,7 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({ selectedProject }) =
         ],
       };
     });
-  }, [bundles, loaded, t, deleteEnabled]);
+  }, [bundles, loaded, t, deleteEnabled, canDelete]);
 
   return (
     <>
@@ -221,7 +232,9 @@ export const BundlesTable: React.FC<BundlesTableProps> = ({ selectedProject }) =
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('Trust Bundles'),
+        })}
         emptyStateTitle={t('No trust bundles found')}
         emptyStateBody={
           selectedProject === 'all'

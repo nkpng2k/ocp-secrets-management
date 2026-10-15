@@ -9,6 +9,17 @@ import { RowActionsMenu } from './RowActionsMenu';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 import { SecretStoreModel, ClusterSecretStoreModel, SecretStore } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import {
+  useOptionalClusterListWatch,
+  combineDualListWatchLoaded,
+  combineDualListWatchError,
+  useDualScopeDeleteAllowed,
+} from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+  listErrorNamespace,
+} from '../utils/permissionErrors';
 
 const getProviderType = (secretStore: SecretStore): string => {
   const provider = secretStore.spec?.provider;
@@ -168,7 +179,12 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Failed to delete secret store',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: deleteModal.secretStore?.metadata?.namespace
+            ? t('SecretStore')
+            : t('ClusterSecretStore'),
+          namespace: deleteModal.secretStore?.metadata?.namespace,
+        }),
       }));
     }
   };
@@ -189,14 +205,16 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
     isList: true,
   });
 
-  const [clusterSecretStores, clusterSecretStoresLoaded, clusterSecretStoresError] =
-    useK8sWatchResource<SecretStore[]>({
-      groupVersionKind: ClusterSecretStoreModel,
-      isList: true,
-    });
+  const clusterSecretStoresWatch = useOptionalClusterListWatch<SecretStore>(ClusterSecretStoreModel);
+  const clusterSecretStores = clusterSecretStoresWatch.data;
 
-  const loaded = secretStoresLoaded && clusterSecretStoresLoaded;
-  const loadError = secretStoresError || clusterSecretStoresError;
+  const loaded = combineDualListWatchLoaded(secretStoresLoaded, clusterSecretStoresWatch);
+  const loadError = combineDualListWatchError(secretStoresError, clusterSecretStoresWatch);
+  const canDeleteRow = useDualScopeDeleteAllowed(
+    SecretStoreModel,
+    ClusterSecretStoreModel,
+    selectedProject,
+  );
 
   const columns = [
     { title: t('Name'), width: 15 },
@@ -250,7 +268,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
                 label: t('Inspect {{kind}}', { kind: typeLabel }),
                 onClick: () => handleInspect(secretStore),
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDeleteRow(secretStore.metadata.namespace)
                 ? [
                     {
                       key: 'delete',
@@ -264,7 +282,7 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
         ],
       };
     });
-  }, [secretStores, clusterSecretStores, loaded, t, deleteEnabled]);
+  }, [secretStores, clusterSecretStores, loaded, t, deleteEnabled, canDeleteRow]);
 
   return (
     <>
@@ -272,7 +290,10 @@ export const SecretStoresTable: React.FC<SecretStoresTableProps> = ({ selectedPr
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('Secret Stores'),
+          namespace: listErrorNamespace(selectedProject),
+        })}
         emptyStateTitle={t('No secret stores found')}
         emptyStateBody={
           selectedProject === 'all'

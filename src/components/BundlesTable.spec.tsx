@@ -1,10 +1,25 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BundlesTable } from './BundlesTable';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
+import { useOptionalClusterListWatch } from '../hooks/useClusterWatchAllowed';
+import { createFullAccessOptionalClusterWatch } from '../test-utils/fullAccessRbacMocks';
 
 jest.mock('@openshift-console/dynamic-plugin-sdk', () => ({
-  useK8sWatchResource: jest.fn(),
   consoleFetch: jest.fn(),
+}));
+
+jest.mock('../hooks/useClusterWatchAllowed', () => {
+  const actual = jest.requireActual('../hooks/useClusterWatchAllowed');
+  return {
+    ...actual,
+    useOptionalClusterListWatch: jest.fn(),
+    useClusterOnlyDeleteAllowed: jest.fn(() => true),
+  };
+});
+
+jest.mock('../hooks/usePluginConfig', () => ({
+  useDeleteEnabled: () => true,
 }));
 
 jest.mock('react-i18next', () => ({
@@ -13,7 +28,24 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-const mockUseK8sWatchResource = useK8sWatchResource as jest.Mock;
+const mockUseOptionalClusterListWatch = useOptionalClusterListWatch as jest.Mock;
+const mockConsoleFetch = consoleFetch as jest.Mock;
+const { useClusterOnlyDeleteAllowed } = jest.requireMock('../hooks/useClusterWatchAllowed');
+const mockUseClusterOnlyDeleteAllowed = useClusterOnlyDeleteAllowed as jest.Mock;
+
+const setBundlesWatch = (
+  data: unknown[],
+  loaded: boolean,
+  error?: unknown,
+  clusterWatchSkipped = false,
+) => {
+  mockUseOptionalClusterListWatch.mockReturnValue({
+    data,
+    loaded,
+    error,
+    clusterWatchSkipped,
+  });
+};
 
 const mockBundles = [
   {
@@ -121,11 +153,12 @@ const mockBundles = [
 describe('BundlesTable', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setBundlesWatch([], true, undefined);
   });
 
   describe('Loading State', () => {
     it('shows loading state when data is not yet loaded', () => {
-      mockUseK8sWatchResource.mockReturnValue([[], false, undefined]);
+      setBundlesWatch([], false, undefined);
 
       const { container } = render(<BundlesTable selectedProject="all" />);
 
@@ -135,21 +168,27 @@ describe('BundlesTable', () => {
 
   describe('Error State', () => {
     it('displays error message when loading fails', () => {
-      mockUseK8sWatchResource.mockReturnValue([
-        [],
-        true,
-        { message: 'Failed to fetch bundles' },
-      ]);
+      setBundlesWatch([], true, { message: 'Failed to fetch bundles' });
 
       render(<BundlesTable selectedProject="all" />);
 
       expect(screen.getByText(/Failed to fetch bundles/)).toBeInTheDocument();
     });
+
+    it('shows friendly permission message for forbidden cluster list', () => {
+      setBundlesWatch([], true, new Error('Forbidden: cannot list bundles.trust.cert-manager.io'));
+
+      render(<BundlesTable selectedProject="all" />);
+
+      const error = screen.getByTestId('bundles-table-error');
+      expect(error).toHaveTextContent('You do not have permission to list');
+      expect(error).not.toHaveTextContent('Forbidden: cannot');
+    });
   });
 
   describe('Empty State', () => {
     it('shows empty state when no bundles exist', () => {
-      mockUseK8sWatchResource.mockReturnValue([[], true, undefined]);
+      setBundlesWatch([], true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -157,7 +196,7 @@ describe('BundlesTable', () => {
     });
 
     it('shows cluster-scoped explanation in empty state', () => {
-      mockUseK8sWatchResource.mockReturnValue([[], true, undefined]);
+      setBundlesWatch([], true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -169,7 +208,7 @@ describe('BundlesTable', () => {
     });
 
     it('shows project-specific empty state message when project is selected', () => {
-      mockUseK8sWatchResource.mockReturnValue([[], true, undefined]);
+      setBundlesWatch([], true, undefined);
 
       render(<BundlesTable selectedProject="my-namespace" />);
 
@@ -183,7 +222,7 @@ describe('BundlesTable', () => {
 
   describe('Data Rendering', () => {
     it('renders bundle names', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -194,7 +233,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders source descriptions', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -203,7 +242,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders secret selector sources correctly', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -211,7 +250,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders target information', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -219,7 +258,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders additional formats in target', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -227,7 +266,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders namespace scope for bundles without selector', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -236,7 +275,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders namespace label selector for filtered bundles', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -244,7 +283,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders Synced status label', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -253,7 +292,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders not synced status with reason', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -261,7 +300,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders Unknown status when no conditions exist', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -269,7 +308,7 @@ describe('BundlesTable', () => {
     });
 
     it('renders default CA version when available', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -279,7 +318,7 @@ describe('BundlesTable', () => {
 
   describe('Table Columns', () => {
     it('renders expected column headers', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
@@ -293,35 +332,94 @@ describe('BundlesTable', () => {
   });
 
   describe('Cluster-Scoped Behavior', () => {
-    it('fetches bundles without namespace filter regardless of selectedProject', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+    it('uses cluster watch helper regardless of selectedProject', () => {
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="my-namespace" />);
 
-      expect(mockUseK8sWatchResource).toHaveBeenCalledWith(
-        expect.objectContaining({
-          groupVersionKind: {
-            group: 'trust.cert-manager.io',
-            version: 'v1alpha1',
-            kind: 'Bundle',
-          },
-          isList: true,
-        }),
-      );
+      expect(mockUseOptionalClusterListWatch).toHaveBeenCalledWith({
+        group: 'trust.cert-manager.io',
+        version: 'v1alpha1',
+        kind: 'Bundle',
+      });
+    });
 
-      const callArg = mockUseK8sWatchResource.mock.calls[0][0];
-      expect(callArg.namespace).toBeUndefined();
+    it('shows empty state without error when cluster bundle watch is denied', () => {
+      setBundlesWatch([], true, undefined, true);
+
+      render(<BundlesTable selectedProject="all" />);
+
+      expect(screen.getByText('No trust bundles found')).toBeInTheDocument();
+      expect(screen.queryByTestId('bundles-table-error')).not.toBeInTheDocument();
+    });
+
+    it('omits Delete when cluster bundle delete is denied', async () => {
+      const user = userEvent.setup();
+      setBundlesWatch(mockBundles, true, undefined);
+      mockUseClusterOnlyDeleteAllowed.mockReturnValue(false);
+
+      render(<BundlesTable selectedProject="all" />);
+
+      await user.click(screen.getAllByRole('button', { name: /kebab dropdown toggle/i })[0]);
+      expect(screen.queryByRole('menuitem', { name: /Delete/ })).not.toBeInTheDocument();
     });
   });
 
   describe('Actions', () => {
     it('renders kebab menu for each bundle', () => {
-      mockUseK8sWatchResource.mockReturnValue([mockBundles, true, undefined]);
+      setBundlesWatch(mockBundles, true, undefined);
 
       render(<BundlesTable selectedProject="all" />);
 
       const kebabButtons = screen.getAllByRole('button', { name: /kebab dropdown toggle/i });
       expect(kebabButtons.length).toBe(mockBundles.length);
     });
+
+    it('shows friendly delete permission message when delete API returns 403', async () => {
+      const user = userEvent.setup();
+      mockUseClusterOnlyDeleteAllowed.mockReturnValue(true);
+      setBundlesWatch(mockBundles, true, undefined);
+      mockConsoleFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: async () => 'user cannot delete bundles',
+      });
+
+      render(<BundlesTable selectedProject="all" />);
+
+      await user.click(screen.getAllByRole('button', { name: /kebab dropdown toggle/i })[0]);
+      await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+      await user.type(
+        screen.getByLabelText('Type resource name to confirm deletion'),
+        'organization-ca-bundle',
+      );
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+      expect(await screen.findByText(/You do not have permission to delete/)).toBeInTheDocument();
+      expect(screen.queryByText(/user cannot delete bundles/)).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('BundlesTable full access (cluster-admin)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseOptionalClusterListWatch.mockReturnValue(
+      createFullAccessOptionalClusterWatch(mockBundles),
+    );
+    mockUseClusterOnlyDeleteAllowed.mockReturnValue(true);
+  });
+
+  it('renders cluster bundles with Delete action and no permission error', async () => {
+    const user = userEvent.setup();
+    render(<BundlesTable selectedProject="all" />);
+
+    expect(screen.getByText('organization-ca-bundle')).toBeInTheDocument();
+    expect(screen.getByText('java-app-truststore')).toBeInTheDocument();
+    expect(screen.queryByTestId('bundles-table-error')).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /kebab dropdown toggle/i })[0]);
+    expect(screen.getByRole('menuitem', { name: /Delete/ })).toBeInTheDocument();
   });
 });

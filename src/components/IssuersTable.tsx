@@ -9,6 +9,17 @@ import { RowActionsMenu } from './RowActionsMenu';
 import { useK8sWatchResource, consoleFetch } from '@openshift-console/dynamic-plugin-sdk';
 import { IssuerModel, ClusterIssuerModel, Issuer } from './crds';
 import { useDeleteEnabled } from '../hooks/usePluginConfig';
+import {
+  useOptionalClusterListWatch,
+  combineDualListWatchLoaded,
+  combineDualListWatchError,
+  useDualScopeDeleteAllowed,
+} from '../hooks/useClusterWatchAllowed';
+import {
+  formatDeleteErrorMessage,
+  formatResourceTableErrorMessage,
+  listErrorNamespace,
+} from '../utils/permissionErrors';
 
 const getIssuerType = (issuer: Issuer): string => {
   if (issuer.spec.acme) return 'ACME';
@@ -124,7 +135,12 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
       setDeleteModal((prev) => ({
         ...prev,
         isDeleting: false,
-        error: error instanceof Error ? error.message : 'Failed to delete issuer',
+        error: formatDeleteErrorMessage(error, t, {
+          resourceCategory: deleteModal.issuer?.metadata?.namespace
+            ? t('Issuer')
+            : t('ClusterIssuer'),
+          namespace: deleteModal.issuer?.metadata?.namespace,
+        }),
       }));
     }
   };
@@ -145,15 +161,12 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
     isList: true,
   });
 
-  const [clusterIssuers, clusterIssuersLoaded, clusterIssuersError] = useK8sWatchResource<Issuer[]>(
-    {
-      groupVersionKind: ClusterIssuerModel,
-      isList: true,
-    },
-  );
+  const clusterIssuersWatch = useOptionalClusterListWatch<Issuer>(ClusterIssuerModel);
+  const clusterIssuers = clusterIssuersWatch.data;
 
-  const loaded = issuersLoaded && clusterIssuersLoaded;
-  const loadError = issuersError || clusterIssuersError;
+  const loaded = combineDualListWatchLoaded(issuersLoaded, clusterIssuersWatch);
+  const loadError = combineDualListWatchError(issuersError, clusterIssuersWatch);
+  const canDeleteRow = useDualScopeDeleteAllowed(IssuerModel, ClusterIssuerModel, selectedProject);
 
   const columns = [
     { title: t('Name'), width: 15 },
@@ -211,7 +224,7 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
                 label: t('Inspect {{kind}}', { kind: issuerKind }),
                 onClick: () => handleInspect(issuer),
               },
-              ...(deleteEnabled
+              ...(deleteEnabled && canDeleteRow(issuer.metadata.namespace)
                 ? [
                     {
                       key: 'delete',
@@ -225,7 +238,7 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
         ],
       };
     });
-  }, [issuers, clusterIssuers, loaded, t, deleteEnabled]);
+  }, [issuers, clusterIssuers, loaded, t, deleteEnabled, canDeleteRow]);
 
   return (
     <>
@@ -233,7 +246,10 @@ export const IssuersTable: React.FC<IssuersTableProps> = ({ selectedProject }) =
         columns={columns}
         rows={rows}
         loading={!loaded}
-        error={loadError?.message}
+        error={formatResourceTableErrorMessage(loadError, t, {
+          resourceCategory: t('Issuers'),
+          namespace: listErrorNamespace(selectedProject),
+        })}
         emptyStateTitle={t('No issuers found')}
         emptyStateBody={
           selectedProject === 'all'
