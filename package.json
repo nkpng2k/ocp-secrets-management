@@ -97,6 +97,9 @@
       "built": true
     }
   },
+  "resolutions": {
+    "proxy-addr": "^2.0.8"
+  },
   "consolePlugin": {
     "name": "ocp-secrets-management",
     "version": "0.0.1",
